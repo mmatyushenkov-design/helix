@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Workout Tracker — макет</title>
+<style>
+  :root {
+    --bg: #121212;
+    --surface: #1e1e1e;
+    --surface2: #262626;
+    --keybg: #191919;
+    --border: #333;
+    --text: #eee;
+    --text-dim: #999;
+    --accent: #3fbf7f;
+    --accent-dim: #3fbf7f2e;
+    --outline: #000;
+    --radius: 18px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { background: #0a0a0a; font-family: 'Segoe UI', Roboto, system-ui, sans-serif; color: var(--text); display: flex; justify-content: center; min-height: 100vh; }
+  .phone { width: 100%; max-width: 420px; background: var(--bg); min-height: 100vh; display: flex; flex-direction: column; position: relative; box-shadow: 0 0 60px #000; }
+  .header { padding: 20px 20px 12px; display: flex; justify-content: space-between; align-items: center; }
+  .header h1 { font-size: 22px; font-weight: 700; }
+  .fab { background: var(--accent); color: #000; border: none; border-radius: 14px; padding: 10px 16px; font-weight: 700; font-size: 14px; cursor: pointer; }
+  .content { flex: 1; overflow-y: auto; padding: 0 16px 90px; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  .stats-bar { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin: 14px 16px 0; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 15px; font-weight: 600; color: var(--text); width: calc(100% - 32px); }
+  .stats-bar span:last-child { color: var(--text-dim); }
+  .stats-bar.hidden { display: none; }
+
+  /* ---------- карточки циклов ---------- */
+  .cycle-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 14px; }
+  .cycle-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .cycle-name { font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .cycle-badge { font-size: 12px; color: var(--accent); background: var(--accent-dim); padding: 4px 10px; border-radius: 20px; white-space: nowrap; }
+  .cycle-days { display: flex; gap: 6px; position: relative; z-index: 2; }
+  .day-pill {
+    position: absolute; top: 0; height: 100%; z-index: 2;
+    background: var(--accent);
+    border-radius: 10px;
+    transition: left .25s ease, width .25s ease;
+  }
+  .day-neck {
+    position: absolute; top: 50%; height: calc(50% + 12px); z-index: 1;
+    background: var(--accent-dim);
+    transition: left .25s ease, width .25s ease;
+  }
+  .day-neck::before, .day-neck::after {
+    content: ''; position: absolute; bottom: 0; width: 12px; height: 12px;
+  }
+  .day-neck::before { left: -12px; background: radial-gradient(circle at top left, transparent 12px, var(--accent-dim) 12.5px); }
+  .day-neck::after { right: -12px; background: radial-gradient(circle at top right, transparent 12px, var(--accent-dim) 12.5px); }
+  .day-neck.edge-l::before, .day-neck.edge-r::after { display: none; }
+  .day-chip { flex: 1; text-align: center; font-size: 12px; padding: 7px 0; border-radius: 10px; color: var(--text-dim); cursor: pointer; position: relative; z-index: 3; border: 1px solid var(--border); transition: color .2s; white-space: nowrap; background: none; }
+  .day-chip.done { color: var(--accent); }
+  .day-chip.missed { color: #666; text-decoration: line-through; }
+  .day-chip.next { border-color: var(--accent); color: var(--accent); }
+  .day-chip.sel { color: #000; font-weight: 700; border-color: transparent; }
+  .sets-panel {
+    background: var(--accent-dim);
+    border: none;
+    border-radius: 12px;
+    padding: 10px;
+    margin: 12px 0 0;
+    position: relative; z-index: 1;
+  }
+  .sets-panel .set-box { background: var(--surface2); }
+  .slide-l { animation: slideL .25s ease; }
+  .slide-r { animation: slideR .25s ease; }
+  @keyframes slideL { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: none; } }
+  @keyframes slideR { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+  .cycle-actions { display: flex; gap: 8px; margin-top: 14px; }
+  .cycle-actions button { flex: 1; padding: 11px 4px; font-size: 13px; }
+  .btn-ghost { background: none; border: 1px solid var(--border); color: var(--text); border-radius: 12px; cursor: pointer; }
+  .btn-danger { background: none; border: 1.5px solid #a03030; color: #d06060; border-radius: 12px; cursor: pointer; }
+  .btn-solid { background: var(--accent); border: none; color: #000; font-weight: 700; border-radius: 12px; cursor: pointer; }
+
+  /* ---------- огонёк ---------- */
+  .flame { display: inline-flex; align-items: center; gap: 3px; font-size: 13px; font-weight: 700; background: linear-gradient(135deg, #ff9d45, #e05a2b); -webkit-background-clip: text; background-clip: text; color: transparent; cursor: pointer; white-space: nowrap; }
+  .flame .fire { font-size: 16px; filter: drop-shadow(0 0 4px #ff6d0066); animation: flick .5s infinite alternate ease-in-out; }
+  @keyframes flick { from { transform: scale(1) rotate(-3deg); } to { transform: scale(1.18) rotate(3deg); } }
+
+  /* ---------- плашки подходов ---------- */
+  .set-flow { display: flex; flex-wrap: wrap; gap: 8px; }
+  .set-box { position: relative; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 8px 6px 6px; text-align: center; width: calc(25% - 6px); cursor: pointer; }
+  .set-flow[data-count="5"] .set-box { width: calc(20% - 6.4px); }
+  .set-box.warm { opacity: .45; filter: grayscale(.8); }
+  .set-box.locked { cursor: default; }
+  .set-val { font-size: 14px; font-weight: 700; white-space: nowrap; }
+  .set-val.condensed { letter-spacing: -0.5px; }
+  .set-val.tiny { font-size: 11.5px; font-weight: 600; letter-spacing: -1px; }
+  .set-pct { font-size: 11px; color: var(--text-dim); margin-top: 1px; }
+  .set-rir { display: inline-flex; align-items: center; justify-content: center; margin-top: 4px; font-size: 11px; font-weight: 700; color: #fff; padding: 0 9px 3px; border-radius: 12px; min-width: 40px; height: 20px; box-sizing: border-box; }
+
+  /* ---------- календарь ---------- */
+  .calendar { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 14px 8px; margin-bottom: 14px; user-select: none; touch-action: pan-y; }
+  .week-row { display: flex; }
+  .day { flex: 1; text-align: center; padding: 8px 0; border-radius: 12px; cursor: pointer; border: 1px solid var(--border); margin: 0 2px; }
+  .day .dow { font-size: 11px; color: var(--text-dim); }
+  .day .num { font-size: 15px; font-weight: 600; margin-top: 2px; }
+  .day.today { box-shadow: inset 0 0 0 1.5px var(--accent); }
+  .day.sel { background: var(--accent); color: #000; }
+  .day.sel .dow { color: #000a; }
+  .day .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); margin: 3px auto 0; }
+  .day.sel .dot { background: #000; }
+  .cal-handle { display: flex; justify-content: center; padding: 12px 0 4px; cursor: pointer; }
+  .cal-handle .bar { width: 44px; height: 6px; border-radius: 3px; background: #555; display: flex; align-items: center; justify-content: center; }
+  .cal-handle .tri { width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; }
+  .cal-handle .tri.down { border-top: 5px solid #999; }
+  .cal-handle .tri.up { border-bottom: 5px solid #999; }
+  .month-view { display: none; }
+  .month-view.open { display: block; }
+  .month-head { display: flex; justify-content: space-between; align-items: center; padding: 6px 4px 12px; }
+  .month-head b { font-size: 15px; text-transform: capitalize; }
+  .month-nav { background: var(--surface2); border: none; color: var(--text); width: 34px; height: 34px; border-radius: 10px; font-size: 16px; cursor: pointer; }
+  .month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .m-dow { text-align: center; font-size: 11px; color: var(--text-dim); padding: 4px 0; }
+  .m-day { text-align: center; font-size: 13px; padding: 8px 0; border-radius: 10px; cursor: pointer; }
+  .m-day.other { color: #555; }
+  .m-day.today { box-shadow: inset 0 0 0 1.5px var(--accent); }
+  .m-day.curweek { background: var(--accent-dim); }
+  .m-day.sel { background: var(--accent); color: #000; font-weight: 700; }
+  .m-day .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); margin: 2px auto 0; }
+  .m-day.sel .dot { background: #000; }
+
+  /* ---------- дневник ---------- */
+  .section-title { font-size: 15px; font-weight: 700; margin: 6px 4px 12px; }
+  .add-exercise-btn { width: 100%; background: var(--surface); border: 1px dashed var(--border); color: var(--text-dim); border-radius: 14px; padding: 16px; font-size: 14px; cursor: pointer; margin-bottom: 14px; }
+  .empty-day { color: var(--text-dim); font-size: 13px; text-align: center; padding: 8px 0 18px; }
+  .exercise-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; position: relative; }
+  .exercise-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding-right: 26px; }
+  .drag-handle { color: #666; font-size: 15px; letter-spacing: -2px; cursor: grab; padding: 2px 2px 2px 0; user-select: none; }
+  .exercise-name { font-weight: 700; font-size: 16px; flex: 1; }
+  .ex-day-badge { font-size: 13px; font-weight: 700; color: var(--accent); }
+  .ex-del { position: absolute; top: 14px; right: 14px; width: 22px; height: 22px; border-radius: 50%; background: none; border: 1.5px solid #a03030; color: #d06060; font-size: 12px; line-height: 18px; text-align: center; cursor: pointer; }
+  .undo-gear { position: absolute; top: 14px; right: 14px; background: none; border: none; color: #777; font-size: 18px; cursor: pointer; }
+  .ex-actions { display: flex; gap: 10px; margin-top: 12px; }
+  .ex-actions button { flex: 1; padding: 12px; font-size: 14px; border-radius: 12px; cursor: pointer; }
+  .btn-addset { background: var(--surface2); border: 1px dashed var(--border); color: var(--accent); font-weight: 700; }
+  .btn-finish { background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-weight: 700; }
+
+  /* ---------- листы ---------- */
+  .sheet-backdrop { position: absolute; inset: 0; background: #000a; display: none; z-index: 20; }
+  .sheet-backdrop.open { display: block; }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; background: var(--surface); border-radius: 24px 24px 0 0; padding: 20px 20px 26px; z-index: 21; transform: translateY(105%); transition: transform .25s ease; border-top: 1px solid var(--border); max-height: 92%; overflow-y: auto; }
+  .sheet.open { transform: translateY(0); }
+  .sheet-grab { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 16px; }
+  .sheet h2 { font-size: 18px; margin-bottom: 18px; }
+  .fields-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .field { flex: 1; background: var(--surface2); border: 1.5px solid var(--border); border-radius: 12px; padding: 14px 6px; text-align: center; font-size: 19px; font-weight: 700; cursor: pointer; transition: border-color .15s; white-space: nowrap; overflow: hidden; }
+  .field small { font-size: 13px; font-weight: 600; color: var(--text-dim); }
+  .field.active { border-color: var(--accent); }
+  .mult-sign { font-size: 20px; font-weight: 700; color: var(--text-dim); }
+  .tm-result { text-align: center; font-size: 16px; font-weight: 800; color: var(--accent); margin: -6px 0 16px; }
+  .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-height: 0; overflow: hidden; opacity: 0; transition: max-height .25s ease, opacity .2s ease, margin .25s ease; margin-bottom: 0; }
+  .keypad.open { max-height: 280px; opacity: 1; margin-bottom: 18px; }
+  .key { background: var(--keybg); border: 1px solid #222; color: var(--text); border-radius: 12px; font-size: 19px; font-weight: 600; padding: 11px 0; cursor: pointer; }
+  .key:active { background: var(--accent-dim); }
+
+  /* ---------- RIR ---------- */
+  .rir-block { background: var(--surface2); border-radius: 14px; padding: 18px 16px; margin-bottom: 20px; max-height: 400px; overflow: hidden; transition: max-height .25s ease, opacity .2s ease, margin .25s ease, padding .25s ease; }
+  .rir-block.collapsed { max-height: 0; opacity: 0; margin-bottom: 0; padding: 0 16px; }
+  .rir-value { font-size: 19px; font-weight: 800; margin-bottom: 16px; transition: color .15s; }
+  .rir-track { position: relative; height: 22px; border-radius: 11px; cursor: pointer; display: flex; }
+  .rir-thumb { position: absolute; top: 50%; width: 26px; height: 26px; border-radius: 50%; background: #fff; border: 3px solid #111; transform: translate(-50%, -50%); transition: left .12s ease; box-shadow: 0 0 10px #0008; pointer-events: none; }
+  .rir-caption { text-align: center; font-size: 12px; color: var(--text-dim); margin-top: 12px; }
+  .sheet-actions { display: flex; gap: 12px; }
+  .sheet-actions .btn-ghost, .sheet-actions .btn-danger, .sheet-actions .btn-solid { padding: 14px; font-size: 15px; flex: 1; }
+  .sheet-actions .btn-solid { flex: 2; }
+
+  /* ---------- список упражнений ---------- */
+  .ex-search { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; color: var(--text); padding: 12px 14px; font-size: 14px; margin-bottom: 14px; outline: none; }
+  .ex-list-item { padding: 14px 6px; border-bottom: 1px solid var(--border); cursor: pointer; font-size: 15px; }
+  .ex-list-item .row { display: flex; justify-content: space-between; align-items: center; }
+  .ex-list-item small { color: var(--text-dim); font-size: 12px; }
+  .ex-cycle-btns { display: flex; gap: 8px; max-height: 0; overflow: hidden; transition: max-height .2s ease, margin .2s ease; }
+  .ex-cycle-btns.open { max-height: 60px; margin-top: 10px; }
+  .ex-cycle-btns button { flex: 1; padding: 10px; font-size: 13px; }
+
+  /* ---------- оверлеи ---------- */
+  .overlay-view { position: absolute; inset: 0; background: var(--bg); z-index: 14; display: none; flex-direction: column; }
+  .overlay-view.open { display: flex; }
+  .ov-header { padding: 16px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
+  .ov-back { background: var(--surface2); border: none; color: var(--text); width: 38px; height: 38px; border-radius: 12px; font-size: 18px; cursor: pointer; flex: 0 0 auto; }
+  .ov-title { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 6px; flex: 1; flex-wrap: wrap; }
+  .ov-body { flex: 1; overflow-y: auto; padding: 16px 16px 30px; }
+  .ov-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+  .ov-tab { flex: 1; text-align: center; padding: 10px; border-radius: 12px; background: var(--surface2); color: var(--text-dim); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .ov-tab.active { background: var(--accent-dim); color: var(--accent); }
+
+  .cv-tm { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 15px; font-weight: 700; }
+  .cv-tm .field { flex: 0 0 92px; padding: 9px 4px; font-size: 15px; font-weight: 700; }
+  .cv-step-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; font-size: 15px; font-weight: 700; }
+  .step-select { background: var(--surface2); color: var(--text); border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 14px; font-size: 17px; font-weight: 700; }
+  .cv-note { color: var(--text-dim); font-size: 12px; margin-bottom: 12px; }
+  .cv-delete { margin-top: 26px; width: 100%; padding: 14px; font-size: 15px; }
+  .day-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; position: relative; }
+  .day-card-head { display: flex; align-items: center; margin-bottom: 12px; padding-right: 26px; }
+  .day-card-head .exercise-name { flex: 1; }
+  .day-card .ex-actions { margin-top: 12px; }
+
+  /* ---------- статистика ---------- */
+  .stat-ex-item { display: flex; justify-content: space-between; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 15px 16px; margin-bottom: 8px; font-size: 15px; cursor: pointer; }
+  .stat-ex-item .in-cycle { font-size: 12px; color: var(--accent); background: var(--accent-dim); padding: 3px 10px; border-radius: 12px; }
+  .stat-ex-item small { color: var(--text-dim); }
+  .chart-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 12px; }
+  .period-row { display: flex; gap: 6px; margin-bottom: 10px; }
+  .period-chip { flex: 1; text-align: center; font-size: 12px; padding: 7px 0; border-radius: 9px; background: var(--surface2); color: var(--text-dim); cursor: pointer; }
+  .period-chip.active { background: var(--accent); color: #000; font-weight: 700; }
+  .metric-sel { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-top: 8px; }
+  .metric-btn { width: 100%; background: none; border: none; color: var(--text); padding: 11px; font-size: 13px; cursor: pointer; text-align: center; }
+  .metric-list { max-height: 0; overflow: hidden; transition: max-height .2s ease; }
+  .metric-list.open { max-height: 220px; }
+  .metric-list div { padding: 11px; font-size: 13px; color: var(--text-dim); cursor: pointer; border-top: 1px solid var(--border); }
+  .metric-list div:hover { color: var(--accent); }
+  .metric-list div.sel { color: var(--accent); font-weight: 600; }
+  .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .tile { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; }
+  .tile .t-label { font-size: 11px; color: var(--text-dim); margin-bottom: 4px; }
+  .tile .t-value { font-size: 17px; font-weight: 800; color: var(--accent); }
+  .tile .t-date { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+  .hist-date { font-weight: 700; font-size: 15px; }
+  .hist-ago { font-size: 12px; color: var(--text-dim); }
+
+  /* ---------- модалки ---------- */
+  .modal-backdrop { position: absolute; inset: 0; background: #000c; display: none; z-index: 30; align-items: center; justify-content: center; }
+  .modal-backdrop.open { display: flex; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 22px; margin: 0 24px; text-align: center; }
+  .modal p { font-size: 15px; margin-bottom: 18px; }
+  .modal-actions { display: flex; gap: 10px; }
+  .modal-actions button { flex: 1; padding: 12px; font-size: 14px; }
+  .cb-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 20px 0; height: 44px; }
+  .cb-tm { font-size: 24px; animation: cbShift .45s .15s both, cbGrow .5s 1.15s both; }
+  .cb-plus { font-size: 22px; font-weight: 800; color: var(--accent); animation: cbAppear .35s .65s both, cbGrow .5s 1.15s both; }
+  @keyframes cbShift { from { transform: translateX(46px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  @keyframes cbAppear { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: translateX(0); } }
+  @keyframes cbGrow { 0% { transform: scale(1); } 50% { transform: scale(1.5); } 100% { transform: scale(1); } }
+
+  /* ---------- настройки ---------- */
+  .setting-group { margin-bottom: 20px; }
+  .setting-group h3 { font-size: 13px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .5px; margin: 0 4px 10px; }
+  .setting-row { display: flex; justify-content: space-between; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 15px 16px; margin-bottom: 8px; font-size: 14px; }
+  .setting-row .val { color: var(--text-dim); }
+  .acc-dots { display: flex; gap: 12px; }
+  .acc-dot { width: 26px; height: 26px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform .12s; }
+  .acc-dot.sel { border-color: #fff; transform: scale(1.15); box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px currentColor; }
+
+  .bottom-nav { position: absolute; bottom: 0; left: 0; right: 0; display: flex; background: var(--surface); border-top: 1px solid var(--border); padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); z-index: 10; }
+  .nav-item { flex: 1; background: none; border: none; color: var(--text-dim); font-size: 11px; padding: 8px 0 4px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .nav-item .ico { font-size: 20px; }
+  .nav-item.active { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <button class="stats-bar" id="stats-bar" onclick="openStats()"><span>📊 Статистика</span><span>›</span></button>
+
+  <div class="header">
+    <h1 id="screen-title">Циклы</h1>
+    <button class="fab" onclick="startCreateCycle()">+ Новый цикл</button>
+  </div>
+
+  <div class="content">
+    <!-- ============ ЦИКЛЫ ============ -->
+    <div class="screen active" id="screen-home">
+      <div id="cycle-list"></div>
+    </div>
+
+    <!-- ============ ДНЕВНИК ============ -->
+    <div class="screen" id="screen-diary">
+      <div class="calendar" id="calendar">
+        <div class="week-row" id="week-row"></div>
+        <div class="month-view" id="month-view">
+          <div class="month-head">
+            <button class="month-nav" onclick="shiftMonth(-1)">‹</button>
+            <b id="month-title"></b>
+            <button class="month-nav" onclick="shiftMonth(1)">›</button>
+          </div>
+          <div class="month-grid" id="month-grid"></div>
+        </div>
+        <div class="cal-handle" id="cal-handle" onclick="toggleMonth()"><div class="bar"><div class="tri down" id="cal-tri"></div></div></div>
+      </div>
+      <div class="section-title" id="diary-date-title">Тренировка — сегодня</div>
+      <div id="exercise-list"></div>
+      <button class="add-exercise-btn" onclick="openExercisePicker('diary')">+ Добавить упражнение</button>
+    </div>
+
+    <!-- ============ НАСТРОЙКИ ============ -->
+    <div class="screen" id="screen-settings">
+      <div class="setting-group">
+        <h3>Внешний вид</h3>
+        <div class="setting-row"><span>Цвет акцента</span><div class="acc-dots" id="acc-dots"></div></div>
+      </div>
+      <div class="setting-group">
+        <h3>Тренировки</h3>
+        <div class="setting-row"><span>Единицы веса</span><span class="val">кг ▾</span></div>
+        <div class="setting-row"><span>Формула 1ПМ</span><span class="val">Эпли ▾</span></div>
+      </div>
+      <div class="setting-group">
+        <h3>Данные</h3>
+        <div class="setting-row"><span>Управление упражнениями</span><span class="val">›</span></div>
+        <div class="setting-row"><span>Экспорт в CSV</span><span class="val">›</span></div>
+      </div>
+      <div class="setting-group">
+        <h3>О приложении</h3>
+        <div class="setting-row"><span>Версия</span><span class="val">0.1.0-макет</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- лист подхода / калькулятор 1ПМ -->
+  <div class="sheet-backdrop" id="backdrop" onclick="closeSheets()"></div>
+  <div class="sheet" id="sheet-set">
+    <div class="sheet-grab"></div>
+    <h2>Новый подход</h2>
+    <div class="fields-row">
+      <div class="field" id="fld-pct" data-key="pct" style="display:none">75<small> %</small></div>
+      <div class="field" id="fld-weight" data-key="weight">120<small> кг</small></div>
+      <span class="mult-sign">×</span>
+      <div class="field" id="fld-reps" data-key="reps">4</div>
+    </div>
+    <div class="tm-result" id="tm-result" style="display:none"></div>
+    <div class="keypad" id="keypad"></div>
+    <div class="rir-block" id="rir-block">
+      <div class="rir-value" id="rir-value">2 повторения до отказа</div>
+      <div class="rir-track" id="rir-track"></div>
+      <div class="rir-caption" id="rir-caption">Сколько повторений осталось в запасе?</div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-ghost" id="btn-cancel" onclick="closeSheets()">Отмена</button>
+      <button class="btn-solid" id="btn-save" onclick="saveSet()">Сохранить подход</button>
+    </div>
+  </div>
+
+  <!-- лист выбора упражнения -->
+  <div class="sheet" id="sheet-exercise">
+    <div class="sheet-grab"></div>
+    <h2>Добавить упражнение</h2>
+    <input class="ex-search" placeholder="Поиск…" oninput="filterEx(this.value)">
+    <div id="ex-pick-list"></div>
+  </div>
+
+  <!-- подтверждение удаления -->
+  <div class="modal-backdrop" id="modal-confirm">
+    <div class="modal">
+      <p id="confirm-text">Вы уверены?</p>
+      <div class="modal-actions">
+        <button class="btn-ghost" onclick="closeConfirm()">Нет</button>
+        <button class="btn-danger" style="background:#a0303033" onclick="confirmDelete()">Да</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- поздравление -->
+  <div class="modal-backdrop" id="modal-celebrate">
+    <div class="modal">
+      <p style="font-size:18px;font-weight:800;margin-bottom:4px">🎉 Цикл пройден!</p>
+      <div class="cb-row" id="celebrate-badge"></div>
+      <button class="btn-solid" style="width:100%;padding:14px;font-size:15px" onclick="closeCelebrate()">Так держать!</button>
+    </div>
+  </div>
+
+  <!-- редактор цикла -->
+  <div class="overlay-view" id="cycle-view">
+    <div class="ov-header">
+      <button class="ov-back" onclick="closeCycleView()">‹</button>
+      <div class="ov-title" id="cv-title"></div>
+    </div>
+    <div class="ov-body">
+      <div class="cv-tm">
+        <label>Расчётный максимум:</label>
+        <div class="field" id="cv-tm" data-key="tm">163<small> кг</small></div>
+      </div>
+      <div class="cv-step-row">
+        <label>Минимальный шаг прогресса:</label>
+        <select class="step-select" id="cv-step" onchange="changeStep(this.value)">
+          <option>1</option><option>1.25</option><option>2</option><option>2.5</option><option>4</option><option>5</option>
+        </select>
+      </div>
+      <div class="cv-note">Нажми на подход, чтобы изменить вес, процент или RIR</div>
+      <div id="cv-days"></div>
+      <button class="add-exercise-btn" onclick="addCycleDay()">+ Добавить день</button>
+      <button class="btn-danger cv-delete" onclick="deleteCurrentCycle()">Удалить цикл</button>
+    </div>
+  </div>
+
+  <!-- статистика: список -->
+  <div class="overlay-view" id="stats-view">
+    <div class="ov-header">
+      <button class="ov-back" onclick="closeOverlay('stats-view')">‹</button>
+      <div class="ov-title">Статистика</div>
+    </div>
+    <div class="ov-body" id="stats-list"></div>
+  </div>
+
+  <!-- статистика: упражнение -->
+  <div class="overlay-view" id="stats-detail">
+    <div class="ov-header">
+      <button class="ov-back" onclick="closeOverlay('stats-detail')">‹</button>
+      <div class="ov-title" id="sd-title"></div>
+    </div>
+    <div class="ov-body">
+      <div class="ov-tabs">
+        <div class="ov-tab active" id="tab-stat" onclick="switchStatsTab('stat')">Статистика</div>
+        <div class="ov-tab" id="tab-hist" onclick="switchStatsTab('hist')">История</div>
+      </div>
+      <div id="sd-stat">
+        <div class="chart-wrap">
+          <div class="period-row" id="period-row"></div>
+          <svg id="chart" viewBox="0 0 360 200" width="100%" height="200"></svg>
+          <div class="metric-sel">
+            <button class="metric-btn" id="metric-btn" onclick="document.getElementById('metric-list').classList.toggle('open')">Расчётный разовый максимум ▾</button>
+            <div class="metric-list" id="metric-list"></div>
+          </div>
+        </div>
+        <div class="tiles" id="sd-tiles"></div>
+      </div>
+      <div id="sd-hist" style="display:none"></div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-tab="home" onclick="switchTab('home')"><span class="ico">⟳</span>Циклы</button>
+    <button class="nav-item" data-tab="diary" onclick="switchTab('diary')"><span class="ico">📅</span>Дневник</button>
+    <button class="nav-item" data-tab="settings" onclick="switchTab('settings')"><span class="ico">⚙</span>Настройки</button>
+  </nav>
+</div>
+
+<script>
+/* ================= акцент ================= */
+const ACCENTS = {
+  green:  { c: '#3fbf7f', name: 'Зелёный' },
+  blue:   { c: '#4d9fd1', name: 'Голубой' },
+  orange: { c: '#d98a3d', name: 'Оранжевый' },
+  purple: { c: '#9c6bc0', name: 'Фиолетовый' },
+  red:    { c: '#c9504c', name: 'Красный' },
+};
+function setAccent(name) {
+  const a = ACCENTS[name];
+  document.documentElement.style.setProperty('--accent', a.c);
+  document.documentElement.style.setProperty('--accent-dim', a.c + '2e');
+  document.querySelectorAll('.acc-dot').forEach(d => d.classList.toggle('sel', d.dataset.acc === name));
+}
+(function renderAccDots() {
+  const wrap = document.getElementById('acc-dots');
+  Object.entries(ACCENTS).forEach(([key, a]) => {
+    const d = document.createElement('div');
+    d.className = 'acc-dot' + (key === 'green' ? ' sel' : '');
+    d.dataset.acc = key;
+    d.style.background = a.c; d.style.color = a.c;
+    d.title = a.name;
+    d.onclick = () => setAccent(key);
+    wrap.appendChild(d);
+  });
+})();
+
+/* ================= RIR (7 сегментов) ================= */
+const SCALE_COLORS = ['#8e1616', '#b03226', '#c16222', '#c9a227', '#3d9c80', '#2e86b0', '#4fa3d1'];
+const RIR_TEXTS = ['в отказ', '1 повторение до отказа', '2 повторения до отказа', '3 повторения до отказа', '4 повторения до отказа', '5 повторений до отказа', '10+ повторений в запасе'];
+const PILL_COLORS = ['#8a3030', '#96422e', '#9c6a24', '#8a7f2a', '#2f8a70', '#2e7d9e', '#4f87a8'];
+const PILL_WARM = '#4a4a4a';
+let curRirIdx = 2;
+(function buildRirTrack() {
+  const track = document.getElementById('rir-track');
+  const grad = document.createElement('div');
+  grad.style.cssText = `flex:1;background:linear-gradient(90deg, ${SCALE_COLORS.join(',')});border-radius:11px;`;
+  track.appendChild(grad);
+  const thumb = document.createElement('div');
+  thumb.className = 'rir-thumb'; thumb.id = 'rir-thumb';
+  track.appendChild(thumb);
+  const setFromEvent = e => {
+    const r = track.getBoundingClientRect();
+    const x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
+    const idx = Math.max(0, Math.min(6, Math.floor(x / (r.width / 7))));
+    updateRir(idx);
+  };
+  track.addEventListener('pointerdown', e => {
+    setFromEvent(e);
+    const move = ev => setFromEvent(ev);
+    const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  });
+})();
+function updateRir(idx) {
+  curRirIdx = idx;
+  document.getElementById('rir-value').textContent = RIR_TEXTS[idx];
+  document.getElementById('rir-value').style.color = SCALE_COLORS[idx];
+  const thumb = document.getElementById('rir-thumb');
+  thumb.style.left = ((idx + 0.5) / 7 * 100) + '%';
+  thumb.style.background = SCALE_COLORS[idx];
+}
+updateRir(2);
+function rirCodeFromIdx(idx) { return idx === 6 ? 6 : idx; }
+function idxFromRirCode(code) { return code === -1 ? 6 : (code === 6 ? 6 : code); }
+function pillHTML(code) {
+  if (code === -1) return `<span class="set-rir" style="background:${PILL_WARM}">&nbsp;</span>`;
+  if (code === 0)  return `<span class="set-rir" style="background:${PILL_COLORS[0]}">отказ</span>`;
+  if (code === 6)  return `<span class="set-rir" style="background:${PILL_COLORS[6]}">10+</span>`;
+  return `<span class="set-rir" style="background:${PILL_COLORS[code]}">RIR ${code}</span>`;
+}
+
+/* ================= данные ================= */
+function defaultStep(name) { return (name.includes('Жим') && !name.includes('стоя')) ? 2.5 : 5; }
+function calcTM(w, r) { return Math.round(w * (1 + r / 30)); }
+function epley(w, r) { return w * (1 + r / 30); }
+function roundDownToStep(v, step) { return Math.floor(v / step) * step; }
+function makeSets(pctsReps) { return pctsReps.map(([pct, reps, rir]) => ({ pct, reps, rir })); }
+function tmpl531days() {
+  return [
+    { sets: makeSets([[65, 5, 2], [75, 5, 1], [85, 5, 0]]) },
+    { sets: makeSets([[70, 3, 2], [80, 3, 1], [90, 3, 0]]) },
+    { sets: makeSets([[75, 5, 1], [85, 3, 1], [95, 1, 0]]) },
+    { sets: makeSets([[40, 5, 5], [50, 5, 5], [60, 5, 5]]) },
+  ];
+}
+let cycleSeq = 1, entrySeq = 1;
+let cycles = [
+  { id: cycleSeq++, name: 'Приседания', bestW: 140, bestR: 5, tm: 163, step: 5, wOffset: 0, curDay: 1, days: tmpl531days() },
+  { id: cycleSeq++, name: 'Жим лёжа', bestW: 100, bestR: 6, tm: 120, step: 2.5, wOffset: 0, curDay: 0, days: tmpl531days() },
+  { id: cycleSeq++, name: 'Становая тяга', bestW: 180, bestR: 3, tm: 195, step: 5, wOffset: 0, curDay: 3, days: tmpl531days() },
+];
+function setWeight(c, s) {
+  if (s.w != null) return s.w;
+  const exact = c.tm * s.pct / 100 + c.wOffset;
+  return Math.round(Math.round(exact / c.step) * c.step * 100) / 100;
+}
+function fmtW(w) { return Number.isInteger(w) ? String(w) : w.toFixed(2).replace(/\.?0+$/, '').replace('.', ','); }
+function dkey(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+let log = {};
+(function seedHistory() {
+  const today = new Date();
+  const mk = (daysAgo, name, sets, cycleId, dayIdx) => {
+    const d = new Date(today); d.setDate(d.getDate() - daysAgo);
+    const k = dkey(d);
+    (log[k] = log[k] || []).push({ id: entrySeq++, name, cycleId, dayIdx, done: true, sets: sets.map(([w, r, rir]) => ({ w, r, rir })) });
+  };
+  const benchW = [92, 95, 95, 97.5, 100, 100, 102.5, 105, 105, 107.5, 110, 112.5, 115, 117.5];
+  benchW.forEach((w, i) => mk(60 - i * 4, 'Жим лёжа', [[w, 5, 2], [w, 5, 2], [w, 4, 1]], null, null));
+  const squatW = [115, 120, 122.5, 125, 127.5, 130, 132.5, 135, 137.5, 140];
+  squatW.forEach((w, i) => mk(55 - i * 5, 'Приседания', [[w, 5, 2], [w, 5, 1], [w, 4, 1]], null, null));
+  [6, 7, 7, 8, 8, 9].forEach((r, i) => mk(40 - i * 6, 'Подтягивания', [[0, r, 2], [0, r - 1, 1]], null, null));
+  mk(0, 'Жим лёжа', [[60, 10, -1], [114, 3, 2], [114, 3, 2]], cycles[1].id, 0);
+})();
+function dayLogged(cycleId, dayIdx) {
+  return Object.values(log).flat().some(e => e.cycleId === cycleId && e.dayIdx === dayIdx);
+}
+
+/* ================= вкладки ================= */
+const TITLES = { home: 'Циклы', diary: 'Дневник', settings: 'Настройки' };
+function switchTab(tab) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + tab).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.tab === tab));
+  document.getElementById('screen-title').textContent = TITLES[tab];
+  document.querySelector('.fab').style.visibility = tab === 'home' ? 'visible' : 'hidden';
+  document.getElementById('stats-bar').classList.toggle('hidden', tab !== 'home');
+}
+
+/* ================= плашка подхода ================= */
+function setValHTML(w, r, compact) {
+  if (compact) return `<div class="set-val condensed">${Math.trunc(w)}×${r}</div>`;
+  const wStr = fmtW(w);
+  const digits = (wStr + String(r)).replace(/\D/g, '').length;
+  const sep = digits >= 5 ? '×' : ' × ';
+  const cls = digits >= 7 ? 'tiny' : (digits >= 5 ? 'condensed' : '');
+  return `<div class="set-val ${cls}">${wStr}${sep}${r}</div>`;
+}
+function setBoxHTML(o, locked, compact) {
+  return `<div class="set-box ${o.rir === -1 || o.planned ? 'warm' : ''} ${locked ? 'locked' : ''}" data-w="${o.w}" data-r="${o.r}" data-rir="${o.rir}" data-pct="${o.pctStored ?? ''}">
+    ${setValHTML(o.w, o.r, compact)}
+    ${o.pct != null && o.pct !== '' ? `<div class="set-pct">${o.pctApprox ? '~' : ''}${o.pct}%</div>` : ''}
+    ${pillHTML(o.rir)}
+  </div>`;
+}
+function setsFlowHTML(sets, locked, animCls) {
+  let compact = false;
+  if (sets.length === 5) compact = sets.every(s => String(Math.trunc(s.w)).length + String(s.r).length <= 5);
+  const count = sets.length === 5 && !compact ? 6 : sets.length;
+  return `<div class="set-flow ${animCls || ''}" data-count="${count}">` +
+    sets.map(s => setBoxHTML(s, locked, compact)).join('') + '</div>';
+}
+
+/* ================= рендер циклов ================= */
+function dayChipLabel(c, i) { return c.days.length <= 5 ? 'день ' + (i + 1) : 'д.' + (i + 1); }
+function renderCycles() {
+  const list = document.getElementById('cycle-list');
+  list.innerHTML = '';
+  cycles.forEach(c => {
+    const card = document.createElement('div');
+    card.className = 'cycle-card';
+    const chips = c.days.map((d, i) => {
+      let cls = '';
+      if (i < c.curDay) cls = dayLogged(c.id, i) ? 'done' : 'missed';
+      if (i === c.curDay) cls = 'next';
+      return `<div class="day-chip ${cls}" data-day="${i}">${dayChipLabel(c, i)}</div>`;
+    }).join('');
+    card.innerHTML = `
+      <div class="cycle-top">
+        <div class="cycle-name">${c.name}
+          <span class="flame" title="Лучший подход и расчётный максимум"><span class="fire">🔥</span>${c.bestW}×${c.bestR} | ${c.tm} кг</span>
+        </div>
+        <div class="cycle-badge">День ${c.curDay + 1} / ${c.days.length}</div>
+      </div>
+      <div class="cycle-days"><div class="day-pill"></div><div class="day-neck"></div>${chips}</div>
+      <div class="sets-panel"></div>
+      <div class="cycle-actions">
+        <button class="btn-ghost btn-edit">Изменить</button>
+        <button class="btn-solid btn-start">Начать</button>
+      </div>`;
+    const holder = card.querySelector('.sets-panel');
+    const pill = card.querySelector('.day-pill');
+    const neck = card.querySelector('.day-neck');
+    const chipEls = [...card.querySelectorAll('.day-chip')];
+    function showDay(di, animate) {
+      const prev = holder.dataset.day != null ? +holder.dataset.day : di;
+      chipEls.forEach((x, xi) => x.classList.toggle('sel', xi === di));
+      const chip = chipEls[di];
+      pill.style.left = chip.offsetLeft + 'px';
+      pill.style.width = chip.offsetWidth + 'px';
+      neck.style.left = chip.offsetLeft + 'px';
+      neck.style.width = chip.offsetWidth + 'px';
+      neck.classList.toggle('edge-l', di === 0);
+      neck.classList.toggle('edge-r', di === chipEls.length - 1);
+      holder.style.borderTopLeftRadius = di === 0 ? '0' : '';
+      holder.style.borderTopRightRadius = di === chipEls.length - 1 ? '0' : '';
+      const dirCls = di > prev ? 'slide-l' : 'slide-r';
+      holder.dataset.day = di;
+      holder.innerHTML = setsFlowHTML(c.days[di].sets.map(s => ({ w: setWeight(c, s), r: s.reps, rir: s.rir, pct: null })), true, animate ? dirCls : '');
+    }
+    chipEls.forEach(ch => { ch.onclick = () => showDay(+ch.dataset.day, true); });
+    card.querySelector('.flame').onclick = () => openCycleView(c);
+    card.querySelector('.btn-edit').onclick = () => openCycleView(c);
+    card.querySelector('.btn-start').onclick = () => startCycleDay(c);
+    list.appendChild(card);
+    showDay(Math.min(c.curDay, c.days.length - 1), false);
+  });
+}
+function startCycleDay(c) {
+  switchTab('diary');
+  addEntry(c.name, c.id, c.curDay, c.days[c.curDay].sets.map(s => ({ w: setWeight(c, s), r: s.reps, rir: s.rir })));
+}
+
+/* ================= редактор цикла ================= */
+let cvCycle = null;
+function openCycleView(c) {
+  cvCycle = c;
+  document.getElementById('cycle-view').classList.add('open');
+  renderCycleView();
+}
+function closeCycleView() { document.getElementById('cycle-view').classList.remove('open'); renderCycles(); }
+function renderCycleView() {
+  const c = cvCycle;
+  document.getElementById('cv-title').innerHTML = `${c.name}
+    <span class="flame"><span class="fire">🔥</span>${c.bestW}×${c.bestR} | ${c.tm} кг</span>`;
+  const tmF = document.getElementById('cv-tm');
+  tmF.innerHTML = `${fmtW(c.tm)}<small> кг</small>`;
+  tmF.onclick = () => openTmCalc();
+  document.getElementById('cv-step').value = String(c.step);
+  const daysEl = document.getElementById('cv-days');
+  daysEl.innerHTML = '';
+  c.days.forEach((d, i) => {
+    const card = document.createElement('div');
+    card.className = 'day-card';
+    card.innerHTML = `
+      <button class="ex-del" title="Удалить день">✕</button>
+      <div class="day-card-head"><div class="exercise-name">День ${i + 1}</div></div>
+      ${setsFlowHTML(d.sets.map(s => ({ w: setWeight(c, s), r: s.reps, rir: s.rir, pct: s.pct != null ? s.pct : Math.round(s.w / c.tm * 100), pctStored: s.pct ?? '', pctApprox: s.pct == null })), true)}
+      <div class="ex-actions"><button class="btn-addset">+ Подход</button></div>`;
+    card.querySelectorAll('.set-box').forEach((b, si) => {
+      b.classList.remove('locked');
+      b.onclick = () => openSetSheet('edit-cycle', b, i, si);
+    });
+    card.querySelector('.ex-del').onclick = () => askConfirm('Удалить день ' + (i + 1) + ' из цикла?', () => {
+      c.days.splice(i, 1);
+      if (c.curDay >= c.days.length) c.curDay = Math.max(0, c.days.length - 1);
+      renderCycleView();
+    });
+    card.querySelector('.btn-addset').onclick = () => openSetSheet('new-cycle-set', null, i, 0);
+    daysEl.appendChild(card);
+  });
+}
+function changeStep(v) { cvCycle.step = parseFloat(v); renderCycles(); }
+function addCycleDay() {
+  if (cvCycle.days.length >= 8) return;
+  cvCycle.days.push({ sets: makeSets([[60, 5, 3], [65, 5, 2], [70, 5, 2]]) });
+  renderCycleView();
+}
+function deleteCurrentCycle() {
+  cycles = cycles.filter(c => c.id !== cvCycle.id);
+  closeCycleView();
+}
+
+/* ================= лист подхода / калькулятор 1ПМ ================= */
+let sheetCtx = { mode: 'new', box: null, dayIdx: 0, setIdx: 0 };
+let keyTarget = null;
+let buffers = { weight: '120', reps: '4', pct: '75' };
+let approx = { weight: false, pct: false };
+let lastEdited = 'pct';
+
+(function buildKeypad() {
+  const kp = document.getElementById('keypad');
+  ['1','2','3','4','5','6','7','8','9',',','0','⌫'].forEach(k => {
+    const b = document.createElement('button');
+    b.className = 'key'; b.textContent = k;
+    b.onclick = () => pressKey(k);
+    kp.appendChild(b);
+  });
+})();
+function fieldText(key, buf) {
+  const unit = { weight: ' кг', reps: '', pct: ' %' }[key];
+  const tilde = approx[key] ? '~' : '';
+  return `${tilde}${buf || '0'}<small>${unit}</small>`;
+}
+function refreshField(key) {
+  const map = { weight: 'fld-weight', reps: 'fld-reps', pct: 'fld-pct' };
+  const el = document.getElementById(map[key]);
+  if (el) el.innerHTML = fieldText(key, buffers[key]);
+}
+function openKeypad(fieldEl) {
+  keyTarget = fieldEl.dataset.key;
+  document.querySelectorAll('.field').forEach(f => f.classList.remove('active'));
+  fieldEl.classList.add('active');
+  document.getElementById('keypad').classList.add('open');
+  document.getElementById('rir-block').classList.add('collapsed');
+}
+function closeKeypad() {
+  keyTarget = null;
+  document.getElementById('keypad').classList.remove('open');
+  if (sheetCtx.mode !== 'tm-calc') document.getElementById('rir-block').classList.remove('collapsed');
+  document.querySelectorAll('.field').forEach(f => f.classList.remove('active'));
+}
+function pressKey(k) {
+  if (!keyTarget) return;
+  let buf = buffers[keyTarget];
+  if (k === '⌫') buf = buf.slice(0, -1);
+  else if (k === ',') { if (keyTarget === 'weight' && !buf.includes(',')) buf = (buf || '0') + ','; }
+  else { if (buf.replace(/[,.]/, '').length < 4) buf = (buf === '0' ? '' : buf) + k; }
+  buffers[keyTarget] = buf;
+  if ((sheetCtx.mode === 'edit-cycle' || sheetCtx.mode === 'new-cycle-set') && cvCycle) {
+    const num = s => parseFloat((s || '0').replace(',', '.')) || 0;
+    const step = cvCycle.step || 2.5;
+    if (keyTarget === 'pct') {
+      lastEdited = 'pct';
+      const exact = num(buf) * cvCycle.tm / 100 + cvCycle.wOffset;
+      const rounded = Math.round(Math.round(exact / step) * step * 100) / 100;
+      approx.weight = Math.abs(rounded - exact) > 0.001;
+      approx.pct = false;
+      buffers.weight = String(rounded).replace('.', ',');
+      refreshField('weight');
+    }
+    if (keyTarget === 'weight') {
+      lastEdited = 'weight';
+      const exactPct = (num(buf) - cvCycle.wOffset) / cvCycle.tm * 100;
+      const roundedPct = Math.round(exactPct);
+      approx.pct = Math.abs(roundedPct - exactPct) > 0.001;
+      approx.weight = false;
+      buffers.pct = String(roundedPct);
+      refreshField('pct');
+    }
+  }
+  if (sheetCtx.mode === 'tm-calc') updateTmResult();
+  refreshField(keyTarget);
+}
+document.querySelectorAll('#sheet-set .field').forEach(f => f.addEventListener('click', () => openKeypad(f)));
+
+function updateTmResult() {
+  const w = parseFloat((buffers.weight || '0').replace(',', '.')) || 0;
+  const r = parseInt(buffers.reps) || 0;
+  const tm = roundDownToStep(epley(w, r), cvCycle.step);
+  document.getElementById('tm-result').textContent = 'Расчётный разовый максимум: ' + fmtW(tm) + ' кг';
+}
+function openTmCalc() { openSetSheet('tm-calc', null, 0, 0); }
+function openSetSheet(mode, box, dayIdx = 0, setIdx = 0) {
+  sheetCtx = { mode, box, dayIdx, setIdx };
+  approx = { weight: false, pct: false };
+  lastEdited = 'pct';
+  document.getElementById('backdrop').classList.add('open');
+  document.getElementById('sheet-set').classList.add('open');
+  const isCycle = mode === 'edit-cycle' || mode === 'new-cycle-set';
+  const isTm = mode === 'tm-calc';
+  document.querySelector('#sheet-set h2').textContent =
+    isTm ? 'Введите свой лучший подход' : (mode === 'new' || mode === 'new-cycle-set' ? 'Новый подход' : 'Изменить подход');
+  document.getElementById('fld-pct').style.display = isCycle ? '' : 'none';
+  document.getElementById('tm-result').style.display = isTm ? '' : 'none';
+  document.getElementById('rir-block').style.display = isTm ? 'none' : '';
+  const cancelBtn = document.getElementById('btn-cancel');
+  const saveBtn = document.getElementById('btn-save');
+  saveBtn.textContent = isTm ? 'Применить' : 'Сохранить подход';
+  if (mode === 'new' || mode === 'new-cycle-set' || isTm) {
+    cancelBtn.textContent = 'Отмена'; cancelBtn.className = 'btn-ghost'; cancelBtn.onclick = closeSheets;
+  } else {
+    cancelBtn.textContent = 'Удалить'; cancelBtn.className = 'btn-danger';
+    cancelBtn.onclick = () => { doDeleteSet(); closeSheets(); };
+  }
+  if (mode === 'new' || mode === 'new-cycle-set') {
+    buffers = { weight: '120', reps: '4', pct: '75' };
+    curRirIdx = 2;
+  } else if (isTm) {
+    buffers = { weight: String(cvCycle.bestW), reps: String(cvCycle.bestR), pct: '75' };
+    updateTmResult();
+  } else {
+    const b = sheetCtx.box;
+    buffers.weight = (b.dataset.w || '0').replace('.', ',');
+    buffers.reps = b.dataset.r;
+    buffers.pct = b.dataset.pct || (isCycle && cvCycle ? String(Math.round((parseFloat(b.dataset.w) - cvCycle.wOffset) / cvCycle.tm * 100)) : '75');
+    curRirIdx = idxFromRirCode(+b.dataset.rir);
+    if (isCycle && cvCycle) {
+      if (b.dataset.pct) {
+        const exact = cvCycle.tm * parseFloat(b.dataset.pct) / 100 + cvCycle.wOffset;
+        approx.weight = Math.abs((parseFloat(b.dataset.w) || 0) - exact) > 0.001;
+      } else {
+        approx.pct = true;
+        lastEdited = 'weight';
+      }
+    }
+  }
+  ['weight', 'reps', 'pct'].forEach(refreshField);
+  if (!isTm) updateRir(curRirIdx);
+  if (isTm) { document.getElementById('rir-block').classList.add('collapsed'); openKeypad(document.getElementById('fld-weight')); }
+  else closeKeypad();
+}
+function makeCycleSet(reps, rir) {
+  if (lastEdited === 'weight') return { w: parseFloat((buffers.weight || '0').replace(',', '.')) || 0, reps, rir };
+  return { pct: Math.round(parseFloat((buffers.pct || '0').replace(',', '.'))) || 75, reps, rir };
+}
+function saveSet() {
+  const w = buffers.weight || '0';
+  const r = parseInt(buffers.reps) || 0;
+  const code = rirCodeFromIdx(curRirIdx);
+  const wNum = parseFloat(w.replace(',', '.')) || 0;
+  if (sheetCtx.mode === 'tm-calc') {
+    cvCycle.tm = roundDownToStep(epley(wNum, r), cvCycle.step);
+    cvCycle.bestW = wNum; cvCycle.bestR = r;
+    closeSheets(); renderCycleView(); renderCycles(); return;
+  }
+  if (sheetCtx.mode === 'new') {
+    if (!currentEntry) return;
+    currentEntry.sets.push({ w: wNum, r, rir: code });
+    renderDiaryDay();
+  } else if (sheetCtx.mode === 'new-cycle-set') {
+    cvCycle.days[sheetCtx.dayIdx].sets.push(makeCycleSet(r || 5, code));
+    renderCycleView();
+  } else if (sheetCtx.mode === 'edit') {
+    currentEntry.sets[sheetCtx.setIdx] = { w: wNum, r, rir: code };
+    renderDiaryDay();
+  } else if (sheetCtx.mode === 'edit-cycle' && cvCycle) {
+    const s = cvCycle.days[sheetCtx.dayIdx].sets[sheetCtx.setIdx];
+    const ns = makeCycleSet(r || s.reps, code);
+    delete s.pct; delete s.w;
+    Object.assign(s, ns);
+    renderCycleView();
+  }
+  closeSheets();
+}
+function doDeleteSet() {
+  if (sheetCtx.mode === 'edit-cycle' && cvCycle) {
+    cvCycle.days[sheetCtx.dayIdx].sets.splice(sheetCtx.setIdx, 1);
+    renderCycleView();
+  } else if (currentEntry) {
+    currentEntry.sets.splice(sheetCtx.setIdx, 1);
+    if (!currentEntry.sets.length) deleteEntry(currentEntry);
+    renderDiaryDay();
+  }
+}
+function closeSheets() {
+  closeKeypad();
+  document.getElementById('backdrop').classList.remove('open');
+  document.querySelectorAll('.sheet').forEach(s => s.classList.remove('open'));
+}
+function closeCelebrate() { document.getElementById('modal-celebrate').classList.remove('open'); }
+
+/* ---------- подтверждение (только упражнения и дни) ---------- */
+let confirmAction = null;
+function askConfirm(text, action) {
+  document.getElementById('confirm-text').textContent = text;
+  confirmAction = action;
+  closeSheets();
+  document.getElementById('modal-confirm').classList.add('open');
+}
+function closeConfirm() { document.getElementById('modal-confirm').classList.remove('open'); confirmAction = null; }
+function confirmDelete() {
+  document.getElementById('modal-confirm').classList.remove('open');
+  if (confirmAction) confirmAction();
+  confirmAction = null;
+}
+
+/* ================= дневник ================= */
+let currentEntry = null;
+function entriesOfDay() { return log[dkey(selectedDate)] || []; }
+function renderDiaryDay() {
+  const list = document.getElementById('exercise-list');
+  list.innerHTML = '';
+  const entries = entriesOfDay();
+  if (!entries.length) {
+    list.innerHTML = '<div class="empty-day">В этот день записей нет</div>';
+    return;
+  }
+  entries.forEach(e => {
+    const c = e.cycleId != null ? cycles.find(x => x.id === e.cycleId) : null;
+    const card = document.createElement('div');
+    card.className = 'exercise-card';
+    card.dataset.entryId = e.id;
+    const badge = c ? `<span class="ex-day-badge">день ${e.dayIdx + 1}/${c.days.length}</span>` : '';
+    card.innerHTML = `
+      ${e.done ? '<button class="undo-gear" title="Отменить завершение">⚙</button>' : '<button class="ex-del" title="Удалить упражнение">✕</button>'}
+      <div class="exercise-head">
+        <span class="drag-handle" title="Потяни, чтобы изменить порядок">☰</span>
+        <div class="exercise-name">${e.name}</div>
+        ${badge}
+      </div>
+      ${setsFlowHTML(e.sets.map(s => ({ w: s.w, r: s.r, rir: s.rir, planned: s.planned, pct: null })), e.done)}
+      ${e.done ? '' : `<div class="ex-actions">
+        <button class="btn-finish">Завершить</button>
+        <button class="btn-addset">+ Подход</button>
+      </div>`}`;
+    if (!e.done) {
+      card.querySelectorAll('.set-box').forEach((b, si) => {
+        b.onclick = () => { currentEntry = e; openSetSheet('edit', b, 0, si); };
+      });
+      card.querySelector('.btn-addset').onclick = () => { currentEntry = e; openSetSheet('new'); };
+      card.querySelector('.btn-finish').onclick = () => finishEntry(e);
+      card.querySelector('.ex-del').onclick = () =>
+        askConfirm('Вы уверены, что хотите удалить это упражнение?', () => { deleteEntry(e); renderDiaryDay(); });
+    } else {
+      card.querySelector('.undo-gear').onclick = () => undoFinish(e);
+    }
+    list.appendChild(card);
+  });
+  bindDrag();
+}
+function finishEntry(e) {
+  e.sets = e.sets.filter(s => !s.planned);
+  e.done = true;
+  if (e.cycleId != null) {
+    const c = cycles.find(x => x.id === e.cycleId);
+    if (c && e.dayIdx === c.curDay) {
+      const isLast = c.curDay >= c.days.length - 1;
+      if (isLast) {
+        /* цикл пройден: ТМ и все веса +шаг, цикл начинается заново */
+        const oldTm = c.tm;
+        c.tm += c.step;
+        c.wOffset += c.step;
+        c.days.forEach(d => d.sets.forEach(s => { if (s.w != null) s.w = Math.round((s.w + c.step) * 100) / 100; }));
+        c.curDay = 0;
+        e.bumped = true;
+        document.getElementById('celebrate-badge').innerHTML =
+          `<span class="flame cb-tm"><span class="fire">🔥</span>${fmtW(oldTm)} кг</span><span class="cb-plus">+${fmtW(c.step)} кг</span>`;
+        document.getElementById('modal-celebrate').classList.add('open');
+      } else {
+        c.curDay++;
+      }
+    }
+    renderCycles();
+  }
+  renderDiaryDay();
+}
+function undoFinish(e) {
+  e.done = false;
+  if (e.cycleId != null) {
+    const c = cycles.find(x => x.id === e.cycleId);
+    if (c) {
+      const later = Object.values(log).flat().some(x => x !== e && x.cycleId === c.id && x.dayIdx != null && x.dayIdx > e.dayIdx);
+      if (!later) {
+        if (e.bumped) { c.tm -= c.step; c.wOffset -= c.step; c.days.forEach(d => d.sets.forEach(s => { if (s.w != null) s.w = Math.round((s.w - c.step) * 100) / 100; })); c.curDay = e.dayIdx; e.bumped = false; }
+        else if (c.curDay === e.dayIdx + 1) c.curDay = e.dayIdx;
+      }
+    }
+    renderCycles();
+  }
+  renderDiaryDay();
+}
+function deleteEntry(e) {
+  const k = dkey(selectedDate);
+  log[k] = (log[k] || []).filter(x => x.id !== e.id);
+  if (e.cycleId != null) {
+    const c = cycles.find(x => x.id === e.cycleId);
+    if (c) {
+      const later = Object.values(log).flat().some(x => x.cycleId === c.id && x.dayIdx != null && x.dayIdx > e.dayIdx);
+      if (!later) {
+        if (e.bumped) { c.tm -= c.step; c.wOffset -= c.step; c.days.forEach(d => d.sets.forEach(s => { if (s.w != null) s.w = Math.round((s.w - c.step) * 100) / 100; })); c.curDay = e.dayIdx; e.bumped = false; }
+        else if (c.curDay === e.dayIdx + 1) c.curDay = e.dayIdx;
+      }
+    }
+  }
+  renderCycles();
+}
+function addEntry(name, cycleId, dayIdx, presetSets) {
+  const k = dkey(selectedDate);
+  (log[k] = log[k] || []).push({
+    id: entrySeq++, name, cycleId: cycleId ?? null, dayIdx: dayIdx ?? null,
+    done: false, sets: (presetSets || []).map(s => ({ ...s, planned: !!presetSets }))
+  });
+  renderDiaryDay();
+  switchTab('diary');
+}
+
+/* drag & drop */
+function bindDrag() {
+  const list = document.getElementById('exercise-list');
+  list.querySelectorAll('.exercise-card').forEach(card => {
+    const handle = card.querySelector('.drag-handle');
+    handle.addEventListener('pointerdown', () => { card.draggable = true; });
+    card.addEventListener('dragend', () => { card.draggable = false; persistOrder(); });
+  });
+  list.ondragover = ev => {
+    ev.preventDefault();
+    const dragging = list.querySelector('[draggable="true"]');
+    if (!dragging) return;
+    const after = [...list.querySelectorAll('.exercise-card:not([draggable="true"])')]
+      .find(el => ev.clientY < el.getBoundingClientRect().top + el.offsetHeight / 2);
+    if (after) list.insertBefore(dragging, after); else list.appendChild(dragging);
+  };
+}
+function persistOrder() {
+  const k = dkey(selectedDate);
+  const order = [...document.querySelectorAll('#exercise-list .exercise-card')].map(c => +c.dataset.entryId);
+  log[k] = order.map(id => (log[k] || []).find(e => e.id === id)).filter(Boolean);
+}
+
+/* ================= выбор упражнения ================= */
+const EXERCISES = ['Приседания','Жим лёжа','Становая тяга','Жим лёжа узким хватом','Жим стоя','Тяга штанги в наклоне','Подтягивания','Болгарские выпады','Румынская тяга','Французский жим','Бицепс со штангой','Планка'];
+let pickerMode = 'diary';
+function renderExList(filter = '') {
+  const list = document.getElementById('ex-pick-list');
+  list.innerHTML = '';
+  EXERCISES.filter(e => e.toLowerCase().includes(filter.toLowerCase())).forEach(name => {
+    const c = cycles.find(x => x.name === name);
+    const el = document.createElement('div');
+    el.className = 'ex-list-item';
+    el.innerHTML = `<div class="row"><span>${name}</span><small>${c ? 'цикл · день ' + (c.curDay + 1) + '/' + c.days.length : 'силовое'} ›</small></div>
+      ${c && pickerMode === 'diary' ? `<div class="ex-cycle-btns">
+        <button class="btn-ghost">Без цикла</button>
+        <button class="btn-solid">Цикл · день ${c.curDay + 1}/${c.days.length}</button>
+      </div>` : ''}`;
+    el.querySelector('.row').onclick = () => {
+      if (pickerMode === 'cycle') { createCycleFrom(name); return; }
+      const btns = el.querySelector('.ex-cycle-btns');
+      if (btns) btns.classList.toggle('open');
+      else { addEntry(name, null, null); closeSheets(); }
+    };
+    if (c && pickerMode === 'diary') {
+      const [noCycle, withCycle] = el.querySelectorAll('.ex-cycle-btns button');
+      noCycle.onclick = () => { addEntry(name, null, null); closeSheets(); };
+      withCycle.onclick = () => { addEntry(name, c.id, c.curDay, c.days[c.curDay].sets.map(s => ({ w: setWeight(c, s), r: s.reps, rir: s.rir }))); closeSheets(); };
+    }
+    list.appendChild(el);
+  });
+}
+function filterEx(v) { renderExList(v); }
+function openExercisePicker(mode) {
+  pickerMode = mode;
+  renderExList();
+  document.getElementById('backdrop').classList.add('open');
+  document.getElementById('sheet-exercise').classList.add('open');
+}
+function startCreateCycle() { openExercisePicker('cycle'); }
+function createCycleFrom(name) {
+  closeSheets();
+  const nc = { id: cycleSeq++, name, bestW: 100, bestR: 5, tm: calcTM(100, 5), step: defaultStep(name), wOffset: 0, curDay: 0, days: tmpl531days() };
+  cycles.unshift(nc);
+  renderCycles();
+  openCycleView(nc);
+}
+
+/* ================= календарь ================= */
+const DOWS = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+let selectedDate = new Date();
+let viewMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+function renderWeek() {
+  const monday = new Date(selectedDate);
+  monday.setDate(selectedDate.getDate() - (selectedDate.getDay() + 6) % 7);
+  const row = document.getElementById('week-row');
+  row.innerHTML = '';
+  const todayStr = new Date().toDateString();
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday); d.setDate(monday.getDate() + i);
+    const isSel = d.toDateString() === selectedDate.toDateString();
+    const isToday = d.toDateString() === todayStr;
+    const el = document.createElement('div');
+    el.className = 'day' + (isSel ? ' sel' : '') + (isToday && !isSel ? ' today' : '');
+    el.innerHTML = `<div class="dow">${DOWS[i]}</div><div class="num">${d.getDate()}</div>${log[dkey(d)]?.length ? '<div class="dot"></div>' : ''}`;
+    el.onclick = () => { selectedDate = d; viewMonth = new Date(d.getFullYear(), d.getMonth(), 1); renderCalendar(); renderDiaryDay(); };
+    row.appendChild(el);
+  }
+}
+function renderMonth() {
+  const y = viewMonth.getFullYear(), m = viewMonth.getMonth();
+  document.getElementById('month-title').textContent = viewMonth.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+  const grid = document.getElementById('month-grid');
+  grid.innerHTML = DOWS.map(d => `<div class="m-dow">${d}</div>`).join('');
+  const lead = (new Date(y, m, 1).getDay() + 6) % 7;
+  const daysIn = new Date(y, m + 1, 0).getDate();
+  const prevDays = new Date(y, m, 0).getDate();
+  for (let i = 0; i < lead; i++)
+    grid.insertAdjacentHTML('beforeend', `<div class="m-day other">${prevDays - lead + 1 + i}</div>`);
+  const monday = new Date(selectedDate);
+  monday.setDate(selectedDate.getDate() - (selectedDate.getDay() + 6) % 7);
+  const todayStr = new Date().toDateString();
+  for (let d = 1; d <= daysIn; d++) {
+    const date = new Date(y, m, d);
+    const isSel = date.toDateString() === selectedDate.toDateString();
+    const isToday = date.toDateString() === todayStr;
+    const inCurWeek = date >= monday && date < new Date(monday.getTime() + 7 * 864e5);
+    const el = document.createElement('div');
+    el.className = 'm-day' + (isSel ? ' sel' : '') + (isToday && !isSel ? ' today' : '') + (inCurWeek && !isSel && !isToday ? ' curweek' : '');
+    el.innerHTML = `${d}${log[dkey(date)]?.length ? '<div class="dot"></div>' : ''}`;
+    el.onclick = () => { selectedDate = date; renderCalendar(); renderDiaryDay(); };
+    grid.appendChild(el);
+  }
+}
+function renderCalendar() {
+  renderWeek(); renderMonth();
+  const isToday = selectedDate.toDateString() === new Date().toDateString();
+  document.getElementById('diary-date-title').textContent =
+    'Тренировка — ' + (isToday ? 'сегодня' : selectedDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }));
+}
+function toggleMonth(force) {
+  const mv = document.getElementById('month-view');
+  const open = force != null ? force : !mv.classList.contains('open');
+  mv.classList.toggle('open', open);
+  document.getElementById('cal-tri').className = 'tri ' + (open ? 'up' : 'down');
+}
+function shiftMonth(n) { viewMonth.setMonth(viewMonth.getMonth() + n); renderMonth(); }
+(function calSwipe() {
+  const cal = document.getElementById('calendar');
+  let startY = null;
+  cal.addEventListener('touchstart', e => { startY = e.touches[0].clientY; }, { passive: true });
+  cal.addEventListener('touchend', e => {
+    if (startY == null) return;
+    const dy = e.changedTouches[0].clientY - startY;
+    if (dy > 40) toggleMonth(true);
+    if (dy < -40) toggleMonth(false);
+    startY = null;
+  }, { passive: true });
+})();
+
+/* ================= статистика ================= */
+const METRICS = [
+  { key: 'e1rm', label: 'Расчётный разовый максимум' },
+  { key: 'maxw', label: 'Максимальный сделанный вес' },
+  { key: 'vol', label: 'Объём (тоннаж) тренировки' },
+  { key: 'maxr', label: 'Макс. повторений' },
+];
+let statsMetric = 'e1rm', statsPeriod = 90, statsEx = null;
+
+function openStats() {
+  const list = document.getElementById('stats-list');
+  list.innerHTML = '';
+  const all = Object.values(log).flat();
+  const names = [...new Set(all.map(e => e.name))];
+  const withCycle = names.filter(n => cycles.some(c => c.name === n));
+  const others = names.filter(n => !withCycle.includes(n));
+  [...withCycle, ...others].forEach(n => {
+    const inCycle = withCycle.includes(n);
+    const el = document.createElement('div');
+    el.className = 'stat-ex-item';
+    const cnt = all.filter(e => e.name === n).length;
+    el.innerHTML = `<span>${n}</span>${inCycle ? '<span class="in-cycle">в цикле</span>' : `<small>${cnt} трен.</small>`}`;
+    el.onclick = () => openStatsDetail(n);
+    list.appendChild(el);
+  });
+  document.getElementById('stats-view').classList.add('open');
+}
+function closeOverlay(id) { document.getElementById(id).classList.remove('open'); }
+
+function sessionMetrics(e) {
+  const done = e.sets.filter(s => !s.planned);
+  if (!done.length) return null;
+  const work = done.filter(s => s.rir >= 0);
+  const sets = work.length ? work : done;
+  return {
+    date: e.date,
+    e1rm: Math.max(...sets.map(s => s.w * (1 + (s.r + Math.max(s.rir, 0)) / 30))),
+    maxw: Math.max(...sets.map(s => s.w)),
+    vol: done.reduce((a, s) => a + s.w * s.r, 0),
+    maxr: Math.max(...sets.map(s => s.r)),
+  };
+}
+function entriesFor(name) {
+  const out = [];
+  Object.keys(log).sort().forEach(k => log[k].forEach(e => { if (e.name === name) out.push({ ...e, date: k }); }));
+  return out;
+}
+function openStatsDetail(name) {
+  statsEx = name;
+  document.getElementById('sd-title').textContent = name;
+  closeOverlay('stats-view');
+  document.getElementById('stats-detail').classList.add('open');
+  const ml = document.getElementById('metric-list');
+  ml.innerHTML = '';
+  METRICS.forEach(mt => {
+    const d = document.createElement('div');
+    d.textContent = mt.label;
+    if (mt.key === statsMetric) d.classList.add('sel');
+    d.onclick = () => {
+      statsMetric = mt.key;
+      document.getElementById('metric-btn').textContent = mt.label + ' ▾';
+      ml.querySelectorAll('div').forEach(x => x.classList.remove('sel'));
+      d.classList.add('sel');
+      ml.classList.remove('open');
+      renderStatsDetail();
+    };
+    ml.appendChild(d);
+  });
+  const pr = document.getElementById('period-row');
+  pr.innerHTML = '';
+  [['1 мес', 30], ['3 мес', 90], ['6 мес', 183], ['1 год', 365], ['Всё', 36500]].forEach(([lbl, days]) => {
+    const b = document.createElement('div');
+    b.className = 'period-chip' + (days === statsPeriod ? ' active' : '');
+    b.textContent = lbl;
+    b.onclick = () => { statsPeriod = days; pr.querySelectorAll('.period-chip').forEach(x => x.classList.remove('active')); b.classList.add('active'); renderStatsDetail(); };
+    pr.appendChild(b);
+  });
+  switchStatsTab('stat');
+}
+function switchStatsTab(t) {
+  document.getElementById('tab-stat').classList.toggle('active', t === 'stat');
+  document.getElementById('tab-hist').classList.toggle('active', t === 'hist');
+  document.getElementById('sd-stat').style.display = t === 'stat' ? '' : 'none';
+  document.getElementById('sd-hist').style.display = t === 'hist' ? '' : 'none';
+  if (t === 'stat') renderStatsDetail(); else renderHistory();
+}
+function pickAxis(metric, lo, hi) {
+  const r = hi - lo;
+  let ladder;
+  if (metric === 'vol') ladder = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000];
+  else if (metric === 'maxr') ladder = r < 10 ? [1, 2, 4] : r < 20 ? [2, 4, 10] : [5, 10, 20, 50];
+  else ladder = [2.5, 5, 10, 25, 50, 100];
+  const step = ladder.find(s => r / s <= 20) || ladder[ladder.length - 1];
+  const lines = r / step;
+  const labelEvery = lines > 20 ? 5 : lines > 10 ? 2 : 1;
+  return { step, labelEvery };
+}
+function renderStatsDetail() {
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - statsPeriod);
+  const entries = entriesFor(statsEx).filter(e => new Date(e.date) >= cutoff);
+  const pts = entries.map(sessionMetrics).filter(Boolean);
+  const svg = document.getElementById('chart');
+  svg.innerHTML = '';
+  if (pts.length) {
+    const vals = pts.map(p => p[statsMetric]);
+    const min = Math.min(...vals), max = Math.max(...vals);
+    const r = (max - min) || (max * 0.1) || 1;
+    const span = r / 0.5;
+    const lo = min - span * 0.4, hi = max + span * 0.1;
+    const W = 360, H = 200, padL = 36, padR = 8, padT = 8, padB = 20;
+    const x = i => padL + (pts.length === 1 ? (W - padL - padR) / 2 : i * (W - padL - padR) / (pts.length - 1));
+    const y = v => padT + (hi - v) / (hi - lo) * (H - padT - padB);
+    const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+    const ax = pickAxis(statsMetric, lo, hi);
+    let grid = '';
+    const k0 = Math.ceil(lo / ax.step - 1e-9), k1 = Math.floor(hi / ax.step + 1e-9);
+    for (let k = k0; k <= k1; k++) {
+      const t = Math.round(k * ax.step * 100) / 100;
+      const gy = y(t);
+      grid += `<line x1="${padL}" y1="${gy}" x2="${W - padR}" y2="${gy}" stroke="#333" stroke-width="0.7"/>`;
+      if ((k - k0) % ax.labelEvery === 0)
+        grid += `<text x="${padL - 5}" y="${gy + 3}" fill="#777" font-size="9" text-anchor="end">${Number.isInteger(t) ? t : t.toFixed(1)}</text>`;
+    }
+    const n = pts.length;
+    const idxs = [...new Set([0, Math.round((n - 1) * 0.25), Math.round((n - 1) * 0.5), Math.round((n - 1) * 0.75), n - 1])];
+    const dates = idxs.map(i => `<text x="${x(i)}" y="${H - 4}" fill="#777" font-size="9" text-anchor="middle">${pts[i].date.slice(5).split('-').reverse().join('.')}</text>`).join('');
+    const path = pts.map((p, i) => (i ? 'L' : 'M') + x(i) + ' ' + y(p[statsMetric])).join(' ');
+    svg.innerHTML = grid + dates +
+      `<path d="${path}" fill="none" stroke="${accent}" stroke-width="2.5"/>` +
+      pts.map((p, i) => `<circle cx="${x(i)}" cy="${y(p[statsMetric])}" r="4" fill="${accent}"/>`).join('');
+  }
+  const all = entriesFor(statsEx).map(sessionMetrics).filter(Boolean);
+  const tiles = document.getElementById('sd-tiles');
+  const best = key => all.reduce((a, b) => b[key] > a[key] ? b : a, all[0]);
+  const fmt = v => Math.round(v * 10) / 10;
+  const d = s => s.split('-').reverse().slice(0, 2).join('.') + '.' + s.slice(0, 4);
+  tiles.innerHTML = all.length ? `
+    <div class="tile"><div class="t-label">Макс. расч. разовый максимум</div><div class="t-value">${fmt(best('e1rm').e1rm)} кг</div><div class="t-date">${d(best('e1rm').date)}</div></div>
+    <div class="tile"><div class="t-label">Макс. объём тренировки</div><div class="t-value">${fmt(best('vol').vol)} кг</div><div class="t-date">${d(best('vol').date)}</div></div>
+    <div class="tile"><div class="t-label">Макс. сделанный вес</div><div class="t-value">${fmt(best('maxw').maxw)} кг</div><div class="t-date">${d(best('maxw').date)}</div></div>
+    <div class="tile"><div class="t-label">Макс. число повторений</div><div class="t-value">${best('maxr').maxr}</div><div class="t-date">${d(best('maxr').date)}</div></div>
+    <div class="tile"><div class="t-label">Всего повторений</div><div class="t-value">${entriesFor(statsEx).reduce((a, e) => a + e.sets.reduce((x, s) => x + s.r, 0), 0)}</div><div class="t-date">за всё время</div></div>
+    <div class="tile"><div class="t-label">Всего подходов</div><div class="t-value">${entriesFor(statsEx).reduce((a, e) => a + e.sets.length, 0)}</div><div class="t-date">за всё время</div></div>
+    <div class="tile"><div class="t-label">Общий объём</div><div class="t-value">${fmt(entriesFor(statsEx).reduce((a, e) => a + e.sets.reduce((x, s) => x + s.w * s.r, 0), 0))} кг</div><div class="t-date">за всё время</div></div>
+    <div class="tile"><div class="t-label">Всего тренировок</div><div class="t-value">${entriesFor(statsEx).length}</div><div class="t-date">за всё время</div></div>
+  ` : '<div class="tile"><div class="t-label">Нет данных</div></div>';
+}
+function renderHistory() {
+  const box = document.getElementById('sd-hist');
+  const entries = entriesFor(statsEx).slice().reverse();
+  const today = new Date();
+  box.innerHTML = '';
+  entries.forEach(e => {
+    const dt = new Date(e.date);
+    const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const ago = Math.round((t0 - dt) / 864e5);
+    const card = document.createElement('div');
+    card.className = 'exercise-card';
+    card.innerHTML = `
+      <div class="exercise-head" style="padding-right:0">
+        <div><div class="hist-date">${dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}</div>
+        <div class="hist-ago">${ago === 0 ? 'сегодня' : ago === 1 ? 'вчера' : ago + ' дн. назад'}</div></div>
+      </div>
+      ${setsFlowHTML(e.sets.map(s => ({ w: s.w, r: s.r, rir: s.rir, pct: null })), true)}`;
+    box.appendChild(card);
+  });
+}
+
+/* ================= запуск ================= */
+renderCycles();
+renderCalendar();
+renderDiaryDay();
+</script>
+</body>
+</html>

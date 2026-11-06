@@ -179,3 +179,14 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# Project-local Android toolchain and generated install packages
+.tooling/
+artifacts/
+Androidsdk/
+tools/
+mockup/screens/
+
+# The Python template ignores every lib/ directory; keep the Flutter sources.
+!frontend/lib/
+!frontend/lib/**

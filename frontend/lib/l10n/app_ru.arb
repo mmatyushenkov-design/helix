@@ -1,0 +1,11 @@
+{
+  "@@locale": "ru",
+  "cycles": "Циклы",
+  "templates": "Шаблоны",
+  "diary": "Дневник",
+  "stats": "Статистика",
+  "settings": "Настройки",
+  "language": "Язык",
+  "weightUnits": "Единицы веса",
+  "distanceUnits": "Единицы дистанции"
+}

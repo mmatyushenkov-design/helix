@@ -1,0 +1,11 @@
+{
+  "@@locale": "en",
+  "cycles": "Cycles",
+  "templates": "Templates",
+  "diary": "Diary",
+  "stats": "Statistics",
+  "settings": "Settings",
+  "language": "Language",
+  "weightUnits": "Weight units",
+  "distanceUnits": "Distance units"
+}

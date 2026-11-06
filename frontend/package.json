@@ -1,0 +1,8 @@
+{
+  "name": "workout-tracker-flutter-preview",
+  "private": true,
+  "scripts": {
+    "dev": "node dev-server.js",
+    "build": "flutter build web"
+  }
+}
