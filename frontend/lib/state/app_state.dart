@@ -141,8 +141,8 @@ class AppState extends ChangeNotifier {
   double distanceFromMeters(double meters) =>
       metersToDisplay(meters, distanceUnit);
   double distanceToMeters(double value) => displayToMeters(value, distanceUnit);
-  String get weightLabel => weightUnitLabel(weightUnit);
-  String get distanceLabel => distanceUnitLabel(distanceUnit);
+  String get weightLabel => weightUnitLabel(weightUnit, language);
+  String get distanceLabel => distanceUnitLabel(distanceUnit, language);
 
   void setAccent(Color c) {
     accent = c;

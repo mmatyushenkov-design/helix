@@ -99,9 +99,13 @@ class SettingsScreen extends StatelessWidget {
                 value: appState.weightUnit,
                 underline: const SizedBox.shrink(),
                 dropdownColor: AppColors.surface2,
-                items: const [
-                  DropdownMenuItem(value: WeightUnit.kg, child: Text('кг')),
-                  DropdownMenuItem(value: WeightUnit.lb, child: Text('lb')),
+                items: [
+                  DropdownMenuItem(
+                      value: WeightUnit.kg,
+                      child: Text(
+                          weightUnitLabel(WeightUnit.kg, appState.language))),
+                  const DropdownMenuItem(
+                      value: WeightUnit.lb, child: Text('lb')),
                 ],
                 onChanged: (v) => appState.setWeightUnit(v ?? WeightUnit.kg),
               ),
@@ -112,9 +116,15 @@ class SettingsScreen extends StatelessWidget {
                 value: appState.distanceUnit,
                 underline: const SizedBox.shrink(),
                 dropdownColor: AppColors.surface2,
-                items: const [
-                  DropdownMenuItem(value: DistanceUnit.km, child: Text('км')),
-                  DropdownMenuItem(value: DistanceUnit.mi, child: Text('mi')),
+                items: [
+                  DropdownMenuItem(
+                      value: DistanceUnit.km,
+                      child: Text(distanceUnitLabel(
+                          DistanceUnit.km, appState.language))),
+                  DropdownMenuItem(
+                      value: DistanceUnit.mi,
+                      child: Text(distanceUnitLabel(
+                          DistanceUnit.mi, appState.language))),
                 ],
                 onChanged: (v) =>
                     appState.setDistanceUnit(v ?? DistanceUnit.km),
@@ -138,7 +148,7 @@ class SettingsScreen extends StatelessWidget {
             ),
           ]),
           _group(tr('about'),
-              [_row(tr('version'), trailing: const _Val('0.2.0-local'))]),
+              [_row(tr('version'), trailing: const _Val('beta-0.3.1'))]),
         ],
       ),
     );

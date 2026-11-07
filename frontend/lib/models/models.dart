@@ -57,9 +57,20 @@ double metersToDisplay(double meters, DistanceUnit unit) =>
     unit == DistanceUnit.mi ? meters / 1609.344 : meters / 1000;
 double displayToMeters(double value, DistanceUnit unit) =>
     unit == DistanceUnit.mi ? value * 1609.344 : value * 1000;
-String weightUnitLabel(WeightUnit unit) => unit == WeightUnit.lb ? 'lb' : 'кг';
-String distanceUnitLabel(DistanceUnit unit) =>
-    unit == DistanceUnit.mi ? 'mi' : 'км';
+String weightUnitLabel(WeightUnit unit, [String language = 'ru']) =>
+    unit == WeightUnit.lb
+        ? 'lb'
+        : language == 'en'
+            ? 'kg'
+            : 'кг';
+String distanceUnitLabel(DistanceUnit unit, [String language = 'ru']) =>
+    unit == DistanceUnit.mi
+        ? language == 'en'
+            ? 'ml'
+            : 'mi'
+        : language == 'en'
+            ? 'km'
+            : 'км';
 
 String fmtW(double w) {
   if (w == w.truncateToDouble()) return w.truncate().toString();
@@ -386,7 +397,7 @@ double setWeight(Cycle c, CycleSet s) {
 }
 
 String dayChipLabel(Cycle c, int i) =>
-    c.days.length <= 5 ? 'день ${i + 1}' : 'д.${i + 1}';
+    c.days.length > 8 ? '${i + 1}' : 'д.${i + 1}';
 
 class DiarySet {
   double w;

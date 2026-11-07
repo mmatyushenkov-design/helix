@@ -169,15 +169,25 @@ const _periods = [
   ('Всё', 36500)
 ];
 
-class StatsListScreen extends StatelessWidget {
+class StatsListScreen extends StatefulWidget {
   final bool embedded;
   const StatsListScreen({super.key, this.embedded = false});
+
+  @override
+  State<StatsListScreen> createState() => _StatsListScreenState();
+}
+
+class _StatsListScreenState extends State<StatsListScreen> {
+  String _query = '';
 
   @override
   Widget build(BuildContext context) {
     final accent = appState.accent;
     final all = appState.log.values.expand((x) => x).toList();
-    final ids = <String>{for (final e in all) e.exerciseId}.toList();
+    final query = _query.trim().toLowerCase();
+    final ids = <String>{for (final e in all) e.exerciseId}
+        .where((id) => appState.exerciseName(id).toLowerCase().contains(query))
+        .toList();
     ids.sort((a, b) {
       final ac = appState.cycles.any((c) => c.exerciseId == a);
       final bc = appState.cycles.any((c) => c.exerciseId == b);
@@ -187,13 +197,28 @@ class StatsListScreen extends StatelessWidget {
     final body = ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        if (embedded)
+        if (widget.embedded)
           Padding(
             padding: const EdgeInsets.only(bottom: 14),
             child: Text(tr('stats'),
                 style:
                     const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
           ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 14),
+          child: TextField(
+            key: const Key('stats-search'),
+            onChanged: (value) => setState(() => _query = value),
+            decoration: InputDecoration(
+              hintText: tr('searchExercise'),
+              prefixIcon: const Icon(Icons.search, size: 20),
+              filled: true,
+              fillColor: AppColors.surface2,
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ),
         if (ids.isEmpty)
           Text(tr('noData'), style: const TextStyle(color: AppColors.textDim)),
         for (final id in ids)
@@ -239,7 +264,7 @@ class StatsListScreen extends StatelessWidget {
           ),
       ],
     );
-    if (embedded) return body;
+    if (widget.embedded) return body;
     return Scaffold(
         appBar: AppBar(leading: const BackButton(), title: Text(tr('stats'))),
         body: body);

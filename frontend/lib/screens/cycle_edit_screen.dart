@@ -84,67 +84,46 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
-          // ТМ
-          Row(children: [
-            const Text('Расчётный максимум:',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-            const SizedBox(width: 10),
-            GestureDetector(
-              onTap: _editTm,
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-                decoration: BoxDecoration(
-                  color: AppColors.surface2,
-                  border: Border.all(color: AppColors.border),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text.rich(
-                  TextSpan(children: [
-                    TextSpan(text: fmtW(appState.weightFromKg(c.tm))),
-                    TextSpan(
-                        text: ' ${appState.weightLabel}',
-                        style: const TextStyle(
-                            fontSize: 12, color: AppColors.textDim)),
-                  ]),
-                  style: const TextStyle(
-                      fontSize: 15, fontWeight: FontWeight.w700),
-                ),
-              ),
+          _parameter(
+            label: 'Расчётный разовый максимум',
+            help:
+                'Расчётный максимум — максимальный вес в этом упражнении на одно повторение, использующийся для расчёта подходов цикла (чем меньше повторений в подходе, используемом для расчёта — тем точнее вычисление).',
+            onTap: _editTm,
+            child: Text.rich(
+              TextSpan(children: [
+                TextSpan(text: fmtW(appState.weightFromKg(c.tm))),
+                TextSpan(
+                    text: ' ${appState.weightLabel}',
+                    style: const TextStyle(
+                        fontSize: 12, color: AppColors.textDim)),
+              ]),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
             ),
-          ]),
+          ),
           const SizedBox(height: 12),
-          // шаг прогресса
-          Row(children: [
-            const Text('Минимальный шаг прогресса:',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-            const SizedBox(width: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: AppColors.surface2,
-                border: Border.all(color: AppColors.border),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: DropdownButton<double>(
-                value: c.step,
-                underline: const SizedBox.shrink(),
-                dropdownColor: AppColors.surface2,
-                style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.text),
-                items: [
-                  for (final s in stepOptions)
-                    DropdownMenuItem(
-                        value: s,
-                        child: Text(
-                            '${fmtW(appState.weightFromKg(s))} ${appState.weightLabel}')),
-                ],
-                onChanged: (v) => _mutate(() => c.step = v ?? c.step),
-              ),
+          _parameter(
+            label: 'Минимальный шаг прогресса',
+            help:
+                'Минимальный шаг прогресса — вес, который прибавится к каждому подходу цикла и расчётному разовому максимуму после полного прохождения цикла. (Рекомендуется выставлять шаг меньше в упражнениях на маленькие мышечные группы (плечи, руки), и больше в упражнениях на большие мышечные группы).',
+            child: DropdownButton<double>(
+              value: c.step,
+              isExpanded: true,
+              underline: const SizedBox.shrink(),
+              dropdownColor: AppColors.surface2,
+              style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.text),
+              items: [
+                for (final step in stepOptions)
+                  DropdownMenuItem(
+                      value: step,
+                      child: Text(
+                          '${fmtW(appState.weightFromKg(step))} ${appState.weightLabel}')),
+              ],
+              onChanged: (v) => _mutate(() => c.step = v ?? c.step),
             ),
-          ]),
+          ),
           const SizedBox(height: 10),
           const Text('Нажми на подход, чтобы изменить вес, процент или RIR',
               style: TextStyle(fontSize: 12, color: AppColors.textDim)),
@@ -154,7 +133,7 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
           // добавить день
           InkWell(
             borderRadius: BorderRadius.circular(14),
-            onTap: c.days.length >= 8
+            onTap: c.days.length >= 12
                 ? null
                 : () => _mutate(() => c.days.add(CycleDay([
                       CycleSet(pct: 60, reps: 5, rir: 3),
@@ -204,6 +183,61 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
     );
   }
 
+  Widget _parameter({
+    required String label,
+    required String help,
+    required Widget child,
+    VoidCallback? onTap,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(label,
+                  style: const TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.w700)),
+            ),
+            IconButton(
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  backgroundColor: AppColors.surface,
+                  content: Text(help),
+                  actions: [
+                    TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('Понятно'))
+                  ],
+                ),
+              ),
+              icon: const Icon(Icons.help_outline,
+                  size: 20, color: AppColors.textDim),
+              visualDensity: VisualDensity.compact,
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        GestureDetector(
+          onTap: onTap,
+          child: Container(
+            width: double.infinity,
+            height: 48,
+            alignment: Alignment.centerLeft,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: AppColors.surface2,
+              border: Border.all(color: AppColors.border),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: child,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _dayCard(int i) {
     final d = c.days[i];
     return Container(
@@ -242,9 +276,7 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
                       Border.all(color: const Color(0xFFA03030), width: 1.5),
                 ),
                 child: const Center(
-                  child: Text('✕',
-                      style: TextStyle(
-                          fontSize: 12, color: Color(0xFFD06060), height: 1)),
+                  child: Icon(Icons.close, size: 14, color: Color(0xFFD06060)),
                 ),
               ),
             ),

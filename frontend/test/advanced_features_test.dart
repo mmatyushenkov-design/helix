@@ -20,6 +20,21 @@ void main() {
     expect(metersToDisplay(5000, DistanceUnit.km), 5);
   });
 
+  test('Подписи единиц и компактные дни длинного цикла', () {
+    expect(weightUnitLabel(WeightUnit.kg, 'en'), 'kg');
+    expect(distanceUnitLabel(DistanceUnit.km, 'en'), 'km');
+    expect(distanceUnitLabel(DistanceUnit.mi, 'en'), 'ml');
+    expect(distanceUnitLabel(DistanceUnit.mi, 'ru'), 'mi');
+    final cycle = Cycle(
+        name: 'Тест',
+        bestW: 100,
+        bestR: 5,
+        tm: 110,
+        step: 2.5,
+        days: [for (var i = 0; i < 12; i++) CycleDay(const [])]);
+    expect(dayChipLabel(cycle, 11), '12');
+  });
+
   test('Все четыре формата подхода сохраняются без потерь', () {
     final entries = [
       DiaryEntry(

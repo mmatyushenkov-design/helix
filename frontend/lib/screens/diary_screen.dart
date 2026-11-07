@@ -56,11 +56,85 @@ class _DiaryScreenState extends State<DiaryScreen> {
   late DateTime _viewMonth = DateTime(_selected.year, _selected.month);
   bool _monthOpen = false;
 
+  static final _leapYears = <int>{
+    for (var year = 2025; year <= 3000; year++)
+      if (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) year
+  };
+
+  DateTime get _minDate => DateTime(2025);
+  DateTime get _maxDate => DateTime(DateTime.now().year + 1, 12, 31);
+
   void _select(DateTime d) {
+    d = _dateOnly(d);
+    if (d.isBefore(_minDate) || d.isAfter(_maxDate)) return;
     setState(() {
-      _selected = _dateOnly(d);
+      _selected = d;
       _viewMonth = DateTime(d.year, d.month);
     });
+  }
+
+  void _changeMonth(int delta) {
+    final next = DateTime(_viewMonth.year, _viewMonth.month + delta);
+    if (next.isBefore(DateTime(2025)) ||
+        next.isAfter(DateTime(DateTime.now().year + 1, 12))) {
+      return;
+    }
+    setState(() => _viewMonth = next);
+  }
+
+  Future<void> _pickMonth() async {
+    var year = _viewMonth.year;
+    var month = _viewMonth.month;
+    final picked = await showDialog<(int, int)>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: AppColors.surface,
+          title: const Text('Выберите месяц и год'),
+          content: Row(
+            children: [
+              Expanded(
+                child: DropdownButton<int>(
+                  value: month,
+                  isExpanded: true,
+                  dropdownColor: AppColors.surface2,
+                  items: [
+                    for (var i = 1; i <= 12; i++)
+                      DropdownMenuItem(value: i, child: Text(_monthsNom[i - 1]))
+                  ],
+                  onChanged: (value) =>
+                      setDialogState(() => month = value ?? month),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: DropdownButton<int>(
+                  value: year,
+                  isExpanded: true,
+                  dropdownColor: AppColors.surface2,
+                  items: [
+                    for (var y = 2025; y <= DateTime.now().year + 1; y++)
+                      DropdownMenuItem(value: y, child: Text('$y'))
+                  ],
+                  onChanged: (value) =>
+                      setDialogState(() => year = value ?? year),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Отмена')),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, (year, month)),
+              child: const Text('Выбрать'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (picked != null) _select(DateTime(picked.$2, picked.$1));
   }
 
   bool _isToday(DateTime d) => _dateOnly(d) == _dateOnly(DateTime.now());
@@ -156,41 +230,53 @@ class _DiaryScreenState extends State<DiaryScreen> {
   /* ---------- поздравление с концом цикла ---------- */
 
   void _showCelebrate(FinishResult res) {
+    var ready = false;
     showDialog(
       context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: AppColors.border),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('🎉 Цикл пройден!',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-              const SizedBox(height: 16),
-              _CelebrateAnim(oldTm: res.oldTm, step: res.step),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: appState.accent,
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text('Так держать!',
-                      style:
-                          TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => Dialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: AppColors.border),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('🎉 Цикл пройден!',
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                const SizedBox(height: 16),
+                _CelebrateAnim(
+                  oldTm: res.oldTm,
+                  step: res.step,
+                  onReady: () => setDialogState(() => ready = true),
                 ),
-              ),
-            ],
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    key: const Key('celebrate-continue'),
+                    onPressed: ready ? () => Navigator.pop(ctx) : null,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: appState.accent,
+                      foregroundColor: Colors.black,
+                      disabledBackgroundColor: AppColors.surface2,
+                      disabledForegroundColor: AppColors.textDim,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Так держать!',
+                        style: TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w700)),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -283,7 +369,8 @@ class _DiaryScreenState extends State<DiaryScreen> {
   Widget _buildCalendar(Color accent) {
     final y = _viewMonth.year, m = _viewMonth.month;
     final lead = (DateTime(y, m, 1).weekday - 1) % 7;
-    final daysIn = DateTime(y, m + 1, 0).day;
+    final daysIn =
+        m == 2 && _leapYears.contains(y) ? 29 : DateTime(y, m + 1, 0).day;
     final cellCount = ((lead + daysIn + 6) ~/ 7) * 7;
     final first = DateTime(y, m, 1).subtract(Duration(days: lead));
     final dates = [
@@ -300,6 +387,11 @@ class _DiaryScreenState extends State<DiaryScreen> {
         weekRow < 0 ? 0.0 : _monthHeaderHeight + weekRow * _monthRowHeight;
 
     return GestureDetector(
+      onHorizontalDragEnd: (d) {
+        final v = d.primaryVelocity ?? 0;
+        if (v < -200) _select(_selected.add(const Duration(days: 7)));
+        if (v > 200) _select(_selected.subtract(const Duration(days: 7)));
+      },
       onVerticalDragEnd: (d) {
         final v = d.primaryVelocity ?? 0;
         if (v > 200 && !_monthOpen) setState(() => _monthOpen = true);
@@ -455,13 +547,29 @@ class _DiaryScreenState extends State<DiaryScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _monthNav(
-                    '‹', () => setState(() => _viewMonth = DateTime(y, m - 1))),
-                Text('${_monthsNom[m - 1]} $y',
-                    style: const TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.w700)),
-                _monthNav(
-                    '›', () => setState(() => _viewMonth = DateTime(y, m + 1))),
+                _monthNav('‹', () => _changeMonth(-1)),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: InkWell(
+                      key: const Key('month-picker'),
+                      borderRadius: BorderRadius.circular(10),
+                      onTap: _pickMonth,
+                      child: Container(
+                        height: 34,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: AppColors.border),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text('${_monthsNom[m - 1]} $y',
+                            style: const TextStyle(
+                                fontSize: 15, fontWeight: FontWeight.w700)),
+                      ),
+                    ),
+                  ),
+                ),
+                _monthNav('›', () => _changeMonth(1)),
               ],
             ),
           ),
@@ -675,17 +783,16 @@ class _DiaryScreenState extends State<DiaryScreen> {
             ],
           ),
           Positioned(
-            top: 0,
-            right: 0,
+            top: -2,
+            right: -2,
             child: e.done
                 ? InkWell(
                     borderRadius: BorderRadius.circular(12),
                     onTap: () => appState.undoFinish(e),
                     child: const Padding(
                       padding: EdgeInsets.all(2),
-                      child: Text('⚙',
-                          style: TextStyle(
-                              fontSize: 17, color: Color(0xFF777777))),
+                      child: Icon(Icons.settings_outlined,
+                          size: 18, color: Color(0xFF777777)),
                     ),
                   )
                 : InkWell(
@@ -700,11 +807,8 @@ class _DiaryScreenState extends State<DiaryScreen> {
                             color: const Color(0xFFA03030), width: 1.5),
                       ),
                       child: const Center(
-                        child: Text('✕',
-                            style: TextStyle(
-                                fontSize: 11,
-                                color: Color(0xFFD06060),
-                                height: 1)),
+                        child: Icon(Icons.close,
+                            size: 12, color: Color(0xFFD06060)),
                       ),
                     ),
                   ),
@@ -738,11 +842,13 @@ class _DragHandle extends StatelessWidget {
   }
 }
 
-/// Анимация поздравления: ТМ уезжает влево, появляется «+шаг», оба пульсируют ×1,5.
+/// Расчётный максимум прокручивается к новому значению и пульсирует.
 class _CelebrateAnim extends StatefulWidget {
   final double oldTm;
   final double step;
-  const _CelebrateAnim({required this.oldTm, required this.step});
+  final VoidCallback onReady;
+  const _CelebrateAnim(
+      {required this.oldTm, required this.step, required this.onReady});
 
   @override
   State<_CelebrateAnim> createState() => _CelebrateAnimState();
@@ -751,8 +857,9 @@ class _CelebrateAnim extends StatefulWidget {
 class _CelebrateAnimState extends State<_CelebrateAnim>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl = AnimationController(
-      vsync: this, duration: const Duration(milliseconds: 1500))
+      vsync: this, duration: const Duration(milliseconds: 2500))
     ..forward();
+  bool _announced = false;
 
   @override
   void dispose() {
@@ -762,47 +869,50 @@ class _CelebrateAnimState extends State<_CelebrateAnim>
 
   @override
   Widget build(BuildContext context) {
-    final accent = appState.accent;
+    final oldValue = appState.weightFromKg(widget.oldTm);
+    final newValue = appState.weightFromKg(widget.oldTm + widget.step);
+    Text number(double value) => Text(
+          '${fmtW(value)} ${appState.weightLabel}',
+          style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: appState.accent),
+        );
     return AnimatedBuilder(
       animation: _ctrl,
       builder: (context, _) {
         final t = _ctrl.value;
-        // 0–0,35: плюс въезжает справа; 0,35–1: общая пульсация 1 → 1,5 → 1
-        final inT = (t / 0.35).clamp(0.0, 1.0);
-        final pulse = t < 0.35
-            ? 0.0
-            : Curves.easeInOut
-                .transform(((t - 0.35) / 0.65 * 2).clamp(0.0, 2.0));
-        final scale = 1 + 0.5 * (pulse <= 1 ? pulse : 2 - pulse);
+        final roll =
+            Curves.easeInOut.transform(((t - 0.2) / 0.4).clamp(0.0, 1.0));
+        var scale = 1.0;
+        if (t >= 0.6 && t < 0.7) {
+          scale = 1 - 0.2 * ((t - 0.6) / 0.1);
+        } else if (t >= 0.7) {
+          scale = 0.8 + 0.2 * ((t - 0.7) / 0.05).clamp(0.0, 1.0);
+        }
+        if (t >= 0.9 && !_announced) {
+          _announced = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) => widget.onReady());
+        }
         return Transform.scale(
           scale: scale,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('🔥 ${fmtW(widget.oldTm)} кг',
-                  style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: accent,
-                      shadows: const [
-                        Shadow(color: Colors.black26, blurRadius: 2)
-                      ])),
-              Opacity(
-                opacity: inT,
-                child: Transform.translate(
-                  offset: Offset(16 * (1 - inT), 0),
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 8),
-                    child: Text('+${fmtW(widget.step)} кг',
-                        style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFFFF9D45))),
+          child: SizedBox(
+            height: 30,
+            child: ClipRect(
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Transform.translate(
+                    offset: Offset(0, -32 * roll),
+                    child: number(oldValue),
                   ),
-                ),
+                  Transform.translate(
+                    offset: Offset(0, 32 * (1 - roll)),
+                    child: number(newValue),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         );
       },

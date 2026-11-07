@@ -123,10 +123,13 @@ class CyclesScreen extends StatelessWidget {
           children: [
             Row(
               children: [
-                Text(tr('cycles'),
-                    style: const TextStyle(
-                        fontSize: 24, fontWeight: FontWeight.w800)),
-                const Spacer(),
+                Expanded(
+                  child: Text(tr('cycles'),
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 24, fontWeight: FontWeight.w800)),
+                ),
+                const SizedBox(width: 8),
                 FilledButton(
                   onPressed: () async {
                     final exerciseId = await showExercisePicker(context);

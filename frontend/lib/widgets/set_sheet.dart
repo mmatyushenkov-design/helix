@@ -185,9 +185,12 @@ class _SetSheetState extends State<_SetSheet> {
     });
   }
 
-  double get _tmResult => roundDownToStep(
-      epley(appState.weightToKg(_num(_wBuf)), int.tryParse(_rBuf) ?? 0),
-      widget.cycle?.step ?? 2.5);
+  double get _tmResult {
+    final reps = (int.tryParse(_rBuf) ?? 0).clamp(0, 25);
+    final estimated = epley(appState.weightToKg(_num(_wBuf)), reps);
+    return roundDownToStep(
+        estimated * (1 - reps / 100), widget.cycle?.step ?? 2.5);
+  }
 
   void _save() {
     final r = int.tryParse(_rBuf) ?? 0;
@@ -288,6 +291,10 @@ class _SetSheetState extends State<_SetSheet> {
               const SizedBox(height: 14),
               Row(
                 children: [
+                  if (_isCycle) ...[
+                    Expanded(child: _field(_Field.pct, ' %')),
+                    _separator('|'),
+                  ],
                   if (format.usesWeight) ...[
                     Expanded(
                         child:
@@ -304,10 +311,6 @@ class _SetSheetState extends State<_SetSheet> {
                     Expanded(
                         child: _field(
                             _Field.distance, ' ${appState.distanceLabel}')),
-                  ],
-                  if (_isCycle) ...[
-                    _separator('·'),
-                    Expanded(child: _field(_Field.pct, ' %')),
                   ],
                 ],
               ),

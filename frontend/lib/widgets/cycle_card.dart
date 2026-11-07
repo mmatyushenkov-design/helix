@@ -46,6 +46,44 @@ class _CycleCardState extends State<CycleCard>
     _swap.forward(from: 0);
   }
 
+  Future<void> _requestDay(int i) async {
+    if (i <= widget.cycle.curDay) {
+      _select(i);
+      return;
+    }
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: Text('Вы уверены, что хотите начать день ${i + 1}?'),
+        content: Text('Текущий день цикла — ${widget.cycle.curDay + 1}'),
+        actions: [
+          TextButton(
+            key: const Key('future-day-yes'),
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(
+                foregroundColor: AppColors.text,
+                backgroundColor: AppColors.surface2),
+            child: const Text('Да'),
+          ),
+          FilledButton(
+            key: const Key('future-day-no'),
+            onPressed: () => Navigator.pop(ctx, false),
+            style: FilledButton.styleFrom(
+                backgroundColor: widget.accent, foregroundColor: Colors.black),
+            child: const Text('Нет'),
+          ),
+        ],
+      ),
+    );
+    if (accepted == true) {
+      widget.cycle.curDay = i;
+      _lastCurDay = i;
+      appState.touch();
+      if (mounted) _select(i);
+    }
+  }
+
   void _openEditor(BuildContext context) {
     Navigator.of(context).push(MaterialPageRoute(
         builder: (_) => CycleEditScreen(cycle: widget.cycle)));
@@ -263,7 +301,7 @@ class _CycleCardState extends State<CycleCard>
         i < c.curDay; // пока без дневника: прошедшие дни — пропущенные
     final next = i == c.curDay && !sel;
     return GestureDetector(
-      onTap: () => _select(i),
+      onTap: () => _requestDay(i),
       child: Container(
         alignment: Alignment.center,
         decoration: BoxDecoration(
@@ -315,32 +353,36 @@ class _FlameLabelState extends State<FlameLabel>
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        AnimatedBuilder(
-          animation: _ctrl,
-          builder: (context, child) => Transform.scale(
-            scale: 1 + 0.18 * _ctrl.value,
-            child: Transform.rotate(
-                angle: -0.05 + 0.1 * _ctrl.value, child: child),
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerLeft,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedBuilder(
+            animation: _ctrl,
+            builder: (context, child) => Transform.scale(
+              scale: 1 + 0.18 * _ctrl.value,
+              child: Transform.rotate(
+                  angle: -0.05 + 0.1 * _ctrl.value, child: child),
+            ),
+            child: const Text('🔥', style: TextStyle(fontSize: 16)),
           ),
-          child: const Text('🔥', style: TextStyle(fontSize: 16)),
-        ),
-        const SizedBox(width: 3),
-        ShaderMask(
-          shaderCallback: (r) => const LinearGradient(
-            colors: [Color(0xFFFF9D45), Color(0xFFE05A2B)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ).createShader(r),
-          child: Text(widget.text,
-              style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white)),
-        ),
-      ],
+          const SizedBox(width: 3),
+          ShaderMask(
+            shaderCallback: (r) => const LinearGradient(
+              colors: [Color(0xFFFF9D45), Color(0xFFE05A2B)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ).createShader(r),
+            child: Text(widget.text,
+                style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white)),
+          ),
+        ],
+      ),
     );
   }
 }

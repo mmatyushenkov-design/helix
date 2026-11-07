@@ -65,7 +65,7 @@ void main() {
 
     await tester.tap(find.byType(DropdownButton<DistanceUnit>));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('mi').last);
+    await tester.tap(find.text('ml').last);
     await tester.pumpAndSettle();
     expect(appState.distanceUnit, DistanceUnit.mi);
   });
@@ -220,11 +220,91 @@ void main() {
         await tester.startGesture(tester.getCenter(find.text('Жим лёжа').last));
     await tester.pump(const Duration(milliseconds: 700));
     await gesture.moveBy(const Offset(0, 180));
+    await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     await gesture.up();
     await tester.pumpAndSettle();
 
     expect(appState.exercises.indexOf(exercise), isNot(oldIndex));
+  });
+
+  testWidgets('Поиск статистики фильтрует упражнения', (tester) async {
+    await tester.pumpWidget(const WorkoutTrackerApp());
+    await tester.tap(find.text('Статистика'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('stats-search')), 'Жим');
+    await tester.pumpAndSettle();
+    expect(find.text('Жим лёжа'), findsOneWidget);
+    expect(find.text('Приседания'), findsNothing);
+  });
+
+  testWidgets('Будущий день цикла меняется только после подтверждения',
+      (tester) async {
+    await tester.pumpWidget(const WorkoutTrackerApp());
+    final cycle = appState.cycles.first;
+    final oldDay = cycle.curDay;
+    final nextDay = oldDay + 1;
+    final oldTm = cycle.tm;
+    final chip = find.text(dayChipLabel(cycle, nextDay)).first;
+    await tester.tap(chip);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Вы уверены, что хотите начать день ${nextDay + 1}?'),
+        findsOneWidget);
+    await tester.tap(find.byKey(const Key('future-day-no')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(cycle.curDay, oldDay);
+    await tester.tap(chip);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.byKey(const Key('future-day-yes')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(cycle.curDay, nextDay);
+    expect(cycle.tm, oldTm);
+  });
+
+  testWidgets('Калькулятор учитывает запас по числу повторений',
+      (tester) async {
+    final cycle = appState.cycles.first..step = 2.5;
+    SetSheetResult? result;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: Builder(
+          builder: (context) => FilledButton(
+            onPressed: () async {
+              result = await showSetSheet(context,
+                  mode: SetSheetMode.tmCalc, cycle: cycle);
+            },
+            child: const Text('Открыть'),
+          ),
+        ),
+      ),
+    ));
+    await tester.tap(find.text('Открыть'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Применить'));
+    await tester.pump();
+    await tester.tap(find.text('Применить'));
+    await tester.pumpAndSettle();
+    final reps = cycle.bestR.clamp(0, 25);
+    final expected = roundDownToStep(
+        epley(cycle.bestW, reps) * (1 - reps / 100), cycle.step);
+    expect(result!.tm, expected);
+  });
+
+  testWidgets('Редактор цикла помещается на экране телефона', (tester) async {
+    tester.view.physicalSize = const Size(360, 780);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(const WorkoutTrackerApp());
+    await tester.tap(find.text('Изменить').first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Расчётный разовый максимум'), findsOneWidget);
+    expect(find.byIcon(Icons.help_outline), findsNWidgets(2));
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('Карточки статистики не переполняются на экране телефона',
