@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:workout_tracker_frontend/main.dart';
 import 'package:workout_tracker_frontend/models/models.dart';
 import 'package:workout_tracker_frontend/state/app_state.dart';
+import 'package:workout_tracker_frontend/widgets/set_box.dart';
 import 'package:workout_tracker_frontend/widgets/set_sheet.dart';
 
 void main() {
@@ -28,17 +29,14 @@ void main() {
     ]) {
       expect(find.text(label), findsWidgets);
     }
-
     await tester.tap(find.text('Шаблоны'));
     await tester.pumpAndSettle();
     expect(appState.tabIndex, 1);
     expect(find.text('Раздел шаблонов пока пуст'), findsOneWidget);
-
     await tester.tap(find.text('Статистика'));
     await tester.pumpAndSettle();
     expect(appState.tabIndex, 3);
     expect(find.text('Жим лёжа'), findsWidgets);
-
     await tester.tap(find.text('Дневник'));
     await tester.pumpAndSettle();
     expect(appState.tabIndex, 2);
@@ -49,6 +47,7 @@ void main() {
     await tester.pumpWidget(const WorkoutTrackerApp());
     await tester.tap(find.text('Настройки'));
     await tester.pumpAndSettle();
+    expect(find.text('Управление упражнениями'), findsNothing);
 
     await tester.tap(find.byType(DropdownButton<String>));
     await tester.pumpAndSettle();
@@ -70,16 +69,37 @@ void main() {
     expect(appState.distanceUnit, DistanceUnit.mi);
   });
 
-  testWidgets('Каталог создаёт упражнение с форматом время + дистанция',
+  testWidgets('Выбор упражнения: группы, поиск и создание через плюс',
       (tester) async {
     await tester.pumpWidget(const WorkoutTrackerApp());
-    await tester.tap(find.text('Настройки'));
+    await tester.tap(find.text('Дневник'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Управление упражнениями'));
+    await tester.tap(find.text('+ Добавить упражнение'));
     await tester.pumpAndSettle();
-    expect(find.text('Поиск упражнения'), findsOneWidget);
 
-    await tester.tap(find.text('+ Упражнение'));
+    final search =
+        tester.widget<TextField>(find.byKey(const Key('exercise-search')));
+    expect(search.autofocus, isFalse);
+    expect(find.byKey(const Key('muscle-group-chest')), findsOneWidget);
+
+    await tester.enterText(find.byKey(const Key('exercise-search')), 'Бицепс');
+    await tester.pumpAndSettle();
+    expect(find.text('Бицепс со штангой'), findsOneWidget);
+    await tester.enterText(find.byKey(const Key('exercise-search')), '');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('muscle-group-chest')));
+    await tester.pumpAndSettle();
+    expect(find.text('Жим лёжа'), findsWidgets);
+    expect(find.text('Приседания'), findsNothing);
+
+    await tester.enterText(
+        find.byKey(const Key('exercise-search')), 'Приседания');
+    await tester.pumpAndSettle();
+    expect(find.text('Упражнения не найдены'), findsOneWidget);
+    await tester.enterText(find.byKey(const Key('exercise-search')), '');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('create-exercise')));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).at(0), 'Велосипед');
     await tester.enterText(find.byType(TextField).at(1), 'Cycling');
@@ -95,7 +115,59 @@ void main() {
     expect(exercise!.nameEn, 'Cycling');
     expect(exercise.format, RecordFormat.timeDistance);
     expect(exercise.isCustom, isTrue);
-    expect(find.text('Поиск упражнения'), findsOneWidget);
+    expect(find.byKey(const Key('exercise-search')), findsOneWidget);
+  });
+
+  testWidgets('Неделя перемещается в месяц без дублирования даты',
+      (tester) async {
+    await tester.pumpWidget(const WorkoutTrackerApp());
+    await tester.tap(find.text('Дневник'));
+    await tester.pumpAndSettle();
+    final today = DateTime.now().day.toString();
+    final date = find.descendant(
+        of: find.byKey(const Key('calendar')), matching: find.text(today));
+    expect(date, findsOneWidget);
+    final collapsedY = tester.getTopLeft(date).dy;
+
+    await tester.tap(find.byKey(const Key('calendar-handle')));
+    await tester.pumpAndSettle();
+    expect(date, findsOneWidget);
+    expect(tester.getTopLeft(date).dy, greaterThan(collapsedY));
+    expect(find.text('Ноябрь ${DateTime.now().year}'), findsOneWidget);
+  });
+
+  testWidgets('Пять подходов: RIR и отказ остаются однострочными',
+      (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: SizedBox(
+            width: 360,
+            child: SetFlow(sets: [
+              for (var i = 0; i < 5; i++) SetBoxData(w: 100, reps: 10, rir: i),
+            ]),
+          ),
+        ),
+      ),
+    ));
+    expect(find.text('отказ'), findsOneWidget);
+    expect(find.text('RIR 2'), findsOneWidget);
+    final labels = tester
+        .widgetList<Text>(find.descendant(
+          of: find.byType(SetFlow),
+          matching: find.byType(Text),
+        ))
+        .where((text) =>
+            text.data == 'отказ' || text.data?.startsWith('RIR') == true);
+    expect(labels, hasLength(5));
+    for (final label in labels) {
+      expect(label.maxLines, 1);
+      expect(label.softWrap, isFalse);
+    }
+    expect(
+        find.descendant(
+            of: find.byType(SetFlow), matching: find.byType(FittedBox)),
+        findsNWidgets(10));
   });
 
   testWidgets('Редактор подхода сохраняет все четыре формата', (tester) async {
@@ -104,15 +176,16 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: Scaffold(
           body: Builder(
-              builder: (context) => Center(
-                    child: FilledButton(
-                      onPressed: () async {
-                        result = await showSetSheet(context,
-                            mode: SetSheetMode.newSet, format: format);
-                      },
-                      child: const Text('Открыть'),
-                    ),
-                  )),
+            builder: (context) => Center(
+              child: FilledButton(
+                onPressed: () async {
+                  result = await showSetSheet(context,
+                      mode: SetSheetMode.newSet, format: format);
+                },
+                child: const Text('Открыть'),
+              ),
+            ),
+          ),
         ),
       ));
       await tester.tap(find.text('Открыть'));

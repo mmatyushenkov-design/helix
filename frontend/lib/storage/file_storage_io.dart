@@ -13,21 +13,24 @@ class LocalFileStorage {
 
   Future<Directory> root() async {
     final base = _rootDirectory ??
-        Directory(p.join((await getApplicationSupportDirectory()).path, 'WorkoutTracker'));
+        Directory(p.join(
+            (await getApplicationSupportDirectory()).path, 'WorkoutTracker'));
     await base.create(recursive: true);
     return base;
   }
 
   Future<File> _resolve(String relativePath) async {
     if (relativePath.trim().isEmpty || p.isAbsolute(relativePath)) {
-      throw ArgumentError.value(relativePath, 'relativePath', 'Ожидается относительный путь');
+      throw ArgumentError.value(
+          relativePath, 'relativePath', 'Ожидается относительный путь');
     }
     final rootDir = await root();
     final normalized = p.normalize(relativePath);
     final rootPath = p.canonicalize(rootDir.path);
     final filePath = p.canonicalize(p.join(rootDir.path, normalized));
     if (filePath == rootPath || !p.isWithin(rootPath, filePath)) {
-      throw ArgumentError.value(relativePath, 'relativePath', 'Путь выходит за папку приложения');
+      throw ArgumentError.value(
+          relativePath, 'relativePath', 'Путь выходит за папку приложения');
     }
     return File(filePath);
   }
@@ -35,7 +38,8 @@ class LocalFileStorage {
   Future<File> writeBytes(String relativePath, List<int> bytes) async {
     final file = await _resolve(relativePath);
     await file.parent.create(recursive: true);
-    final temporary = File('${file.path}.tmp-${DateTime.now().microsecondsSinceEpoch}');
+    final temporary =
+        File('${file.path}.tmp-${DateTime.now().microsecondsSinceEpoch}');
     try {
       await temporary.writeAsBytes(bytes, flush: true);
       // rename атомарен в пределах одной файловой системы. На Windows сначала
@@ -53,7 +57,8 @@ class LocalFileStorage {
     return file.readAsBytes();
   }
 
-  Future<bool> exists(String relativePath) async => (await _resolve(relativePath)).exists();
+  Future<bool> exists(String relativePath) async =>
+      (await _resolve(relativePath)).exists();
 
   Future<void> delete(String relativePath) async {
     final file = await _resolve(relativePath);

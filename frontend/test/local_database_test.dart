@@ -12,8 +12,10 @@ import 'package:workout_tracker_frontend/storage/local_store_io.dart';
 void main() {
   setUpAll(sqfliteFfiInit);
 
-  test('SQLite: нормализованный снапшот сохраняется и восстанавливается', () async {
-    final db = LocalDatabase(factory: databaseFactoryFfi, databasePath: inMemoryDatabasePath);
+  test('SQLite: нормализованный снапшот сохраняется и восстанавливается',
+      () async {
+    final db = LocalDatabase(
+        factory: databaseFactoryFfi, databasePath: inMemoryDatabasePath);
     final state = AppState()..seed();
     await db.writeSnapshot(state.toJson());
 
@@ -34,22 +36,28 @@ void main() {
     await db.close();
   });
 
-  test('Миграция: старый JSON из kv переносится в нормализованные таблицы', () async {
-    final directory = await Directory.systemTemp.createTemp('workout-tracker-migration-');
+  test('Миграция: старый JSON из kv переносится в нормализованные таблицы',
+      () async {
+    final directory =
+        await Directory.systemTemp.createTemp('workout-tracker-migration-');
     final path = p.join(directory.path, 'legacy.db');
     final state = AppState()..seed();
-    final legacy = LocalDatabase(factory: databaseFactoryFfi, databasePath: path);
+    final legacy =
+        LocalDatabase(factory: databaseFactoryFfi, databasePath: path);
     final legacyDb = await legacy.open();
-    await legacyDb.insert('kv', {'key': 'snapshot', 'value': jsonEncode(state.toJson())});
+    await legacyDb
+        .insert('kv', {'key': 'snapshot', 'value': jsonEncode(state.toJson())});
     await legacy.close();
 
     final store = LocalStore(factory: databaseFactoryFfi, databasePath: path);
     final raw = await store.read();
     expect(raw, isNotNull);
-    expect((jsonDecode(raw!) as Map<String, dynamic>)['cycles'], hasLength(state.cycles.length));
+    expect((jsonDecode(raw!) as Map<String, dynamic>)['cycles'],
+        hasLength(state.cycles.length));
     await store.close();
 
-    final normalizedDb = LocalDatabase(factory: databaseFactoryFfi, databasePath: path);
+    final normalizedDb =
+        LocalDatabase(factory: databaseFactoryFfi, databasePath: path);
     final normalized = await normalizedDb.readSnapshot();
     expect(normalized, isNotNull);
     expect(normalized!['cycles'], hasLength(state.cycles.length));
@@ -60,14 +68,18 @@ void main() {
     await directory.delete(recursive: true);
   });
 
-  test('FileStorage: файлы остаются локальными, а выход за корень запрещён', () async {
-    final directory = await Directory.systemTemp.createTemp('workout-tracker-files-');
+  test('FileStorage: файлы остаются локальными, а выход за корень запрещён',
+      () async {
+    final directory =
+        await Directory.systemTemp.createTemp('workout-tracker-files-');
     final storage = LocalFileStorage(rootDirectory: directory);
     await storage.writeBytes('media/exercise/demo.txt', [1, 2, 3, 4]);
 
     expect(await storage.exists('media/exercise/demo.txt'), isTrue);
-    expect(await storage.readBytes('media/exercise/demo.txt'), orderedEquals([1, 2, 3, 4]));
-    await expectLater(storage.writeBytes('../outside.txt', [5]), throwsArgumentError);
+    expect(await storage.readBytes('media/exercise/demo.txt'),
+        orderedEquals([1, 2, 3, 4]));
+    await expectLater(
+        storage.writeBytes('../outside.txt', [5]), throwsArgumentError);
 
     await storage.delete('media/exercise/demo.txt');
     expect(await storage.exists('media/exercise/demo.txt'), isFalse);

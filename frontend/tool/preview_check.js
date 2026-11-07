@@ -69,18 +69,42 @@ async function main() {
     await send('Emulation.setDeviceMetricsOverride', {
       width: 430, height: 900, deviceScaleFactor: 1, mobile: true,
     });
-    for (let tab = 0; tab < 5; tab++) {
+    const shot = async (name) => {
+      const image = await send('Page.captureScreenshot', { format: 'png', fromSurface: true });
+      const file = path.join(output, `${name}.png`);
+      fs.writeFileSync(file, Buffer.from(image.data, 'base64'));
+      console.log(`${name} -> ${file}`);
+    };
+    const navigate = async (tab) => {
       await send('Page.navigate', { url: `http://127.0.0.1:7102/?tab=${tab}` });
-      await delay(7000);
-      const state = await send('Runtime.evaluate', {
-        expression: `JSON.stringify({title:document.title,width:innerWidth,height:innerHeight,text:document.body.innerText.slice(0,300)})`,
-        returnByValue: true,
-      });
-      const shot = await send('Page.captureScreenshot', { format: 'png', fromSurface: true });
-      const file = path.join(output, `tab-${tab}.png`);
-      fs.writeFileSync(file, Buffer.from(shot.data, 'base64'));
-      console.log(`tab ${tab}: ${state.result.value} -> ${file}`);
+      await delay(5000);
+    };
+    const click = async (x, y) => {
+      await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 });
+      await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 });
+      await delay(700);
+    };
+    for (let tab = 0; tab < 5; tab++) {
+      await navigate(tab);
+      await shot(`tab-${tab}`);
     }
+    await navigate(2);
+    await click(215, 92);
+    await shot('calendar-open');
+    await navigate(2);
+    await click(215, 318);
+    await shot('exercise-groups');
+    await click(200, 375);
+    await shot('exercise-group-chest');
+    await navigate(2);
+    await click(215, 318);
+    await click(382, 302);
+    await shot('exercise-create');
+    await navigate(0);
+    await click(120, 272);
+    await shot('cycle-editor');
+    await click(75, 250);
+    await shot('set-editor');
     if (errors.length) {
       console.error('Browser errors:', errors.join('\n---\n'));
       process.exitCode = 1;

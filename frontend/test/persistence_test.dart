@@ -12,7 +12,8 @@ void main() {
     before.goToTab(1);
 
     final restored = AppState()..seed();
-    restored.loadJson(jsonDecode(jsonEncode(before.toJson())) as Map<String, dynamic>);
+    restored.loadJson(
+        jsonDecode(jsonEncode(before.toJson())) as Map<String, dynamic>);
 
     expect(restored.cycles.length, before.cycles.length);
     expect(restored.cycles.first.tm, c.tm);
@@ -21,7 +22,8 @@ void main() {
     expect(restored.accent.toARGB32(), before.accent.toARGB32());
     // id продолжаются без коллизий
     final nc = restored.addCycle('Жим стоя');
-    expect(restored.cycles.any((x) => x.id == nc.id && !identical(x, nc)), isFalse);
+    expect(restored.cycles.any((x) => x.id == nc.id && !identical(x, nc)),
+        isFalse);
   });
 
   test('SQLite: запись и чтение снапшота', () async {

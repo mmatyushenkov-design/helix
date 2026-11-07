@@ -7,7 +7,20 @@ class NumKeypad extends StatelessWidget {
   final ValueChanged<String> onKey;
   const NumKeypad({super.key, required this.onKey});
 
-  static const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', ',', '0', '⌫'];
+  static const keys = [
+    '1',
+    '2',
+    '3',
+    '4',
+    '5',
+    '6',
+    '7',
+    '8',
+    '9',
+    ',',
+    '0',
+    '⌫'
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +41,10 @@ class NumKeypad extends StatelessWidget {
               onTap: () => onKey(k),
               child: Center(
                 child: Text(k,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.text)),
+                    style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.text)),
               ),
             ),
           ),

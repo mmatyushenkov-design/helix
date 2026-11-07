@@ -14,7 +14,8 @@ class SetSheetResult {
   final double? tm;
   final double? bestW;
   final int? bestR;
-  const SetSheetResult({this.set, this.deleted = false, this.tm, this.bestW, this.bestR});
+  const SetSheetResult(
+      {this.set, this.deleted = false, this.tm, this.bestW, this.bestR});
 }
 
 Future<SetSheetResult?> showSetSheet(
@@ -27,9 +28,15 @@ Future<SetSheetResult?> showSetSheet(
   return showModalBottomSheet<SetSheetResult>(
     context: context,
     isScrollControlled: true,
+    useSafeArea: true,
     backgroundColor: AppColors.surface,
-    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-    builder: (_) => _SetSheet(mode: mode, cycle: cycle, initial: initial, format: format),
+    shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+    builder: (_) => SafeArea(
+      top: false,
+      child:
+          _SetSheet(mode: mode, cycle: cycle, initial: initial, format: format),
+    ),
   );
 }
 
@@ -40,7 +47,8 @@ class _SetSheet extends StatefulWidget {
   final Cycle? cycle;
   final CycleSet? initial;
   final RecordFormat format;
-  const _SetSheet({required this.mode, this.cycle, this.initial, required this.format});
+  const _SetSheet(
+      {required this.mode, this.cycle, this.initial, required this.format});
 
   @override
   State<_SetSheet> createState() => _SetSheetState();
@@ -58,11 +66,18 @@ class _SetSheetState extends State<_SetSheet> {
   _Field _lastEdited = _Field.pct;
   int _rirIdx = 2;
 
-  bool get _isCycle => widget.mode == SetSheetMode.editCycle || widget.mode == SetSheetMode.newCycleSet;
+  bool get _isCycle =>
+      widget.mode == SetSheetMode.editCycle ||
+      widget.mode == SetSheetMode.newCycleSet;
   bool get _isTm => widget.mode == SetSheetMode.tmCalc;
-  bool get _isNew => widget.mode == SetSheetMode.newCycleSet || widget.mode == SetSheetMode.newSet;
-  bool get _canDelete => widget.mode == SetSheetMode.editCycle || widget.mode == SetSheetMode.editSet;
-  RecordFormat get _format => _isCycle || _isTm ? RecordFormat.weightReps : widget.format;
+  bool get _isNew =>
+      widget.mode == SetSheetMode.newCycleSet ||
+      widget.mode == SetSheetMode.newSet;
+  bool get _canDelete =>
+      widget.mode == SetSheetMode.editCycle ||
+      widget.mode == SetSheetMode.editSet;
+  RecordFormat get _format =>
+      _isCycle || _isTm ? RecordFormat.weightReps : widget.format;
 
   @override
   void initState() {
@@ -152,13 +167,15 @@ class _SetSheetState extends State<_SetSheet> {
         if (t == _Field.pct) {
           _lastEdited = _Field.pct;
           final exact = _num(buf) * c.tm / 100 + c.wOffset;
-          final rounded = ((exact / c.step).round() * c.step * 100).roundToDouble() / 100;
+          final rounded =
+              ((exact / c.step).round() * c.step * 100).roundToDouble() / 100;
           _approxW = (rounded - exact).abs() > 0.001;
           _approxP = false;
           _wBuf = fmtW(appState.weightFromKg(rounded));
         } else if (t == _Field.weight) {
           _lastEdited = _Field.weight;
-          final exactPct = (appState.weightToKg(_num(buf)) - c.wOffset) / c.tm * 100;
+          final exactPct =
+              (appState.weightToKg(_num(buf)) - c.wOffset) / c.tm * 100;
           final roundedPct = exactPct.round();
           _approxP = (roundedPct - exactPct).abs() > 0.001;
           _approxW = false;
@@ -169,31 +186,40 @@ class _SetSheetState extends State<_SetSheet> {
   }
 
   double get _tmResult => roundDownToStep(
-      epley(appState.weightToKg(_num(_wBuf)), int.tryParse(_rBuf) ?? 0), widget.cycle?.step ?? 2.5);
+      epley(appState.weightToKg(_num(_wBuf)), int.tryParse(_rBuf) ?? 0),
+      widget.cycle?.step ?? 2.5);
 
   void _save() {
     final r = int.tryParse(_rBuf) ?? 0;
     if (_isTm) {
-      Navigator.pop(context,
-          SetSheetResult(tm: _tmResult, bestW: appState.weightToKg(_num(_wBuf)), bestR: r));
+      Navigator.pop(
+          context,
+          SetSheetResult(
+              tm: _tmResult,
+              bestW: appState.weightToKg(_num(_wBuf)),
+              bestR: r));
       return;
     }
     final format = _format;
     final weight = format.usesWeight ? appState.weightToKg(_num(_wBuf)) : null;
     final result = CycleSet(
       w: _isCycle && _lastEdited != _Field.weight ? null : weight,
-      pct: _isCycle && _lastEdited != _Field.weight ? int.tryParse(_pctBuf) ?? 75 : null,
+      pct: _isCycle && _lastEdited != _Field.weight
+          ? int.tryParse(_pctBuf) ?? 75
+          : null,
       reps: format.usesReps ? (r == 0 ? (widget.initial?.reps ?? 5) : r) : 0,
       rir: _rirIdx,
       durationSec: format.usesTime ? int.tryParse(_timeBuf) ?? 0 : 0,
-      distanceM: format.usesDistance ? appState.distanceToMeters(_num(_distBuf)) : 0,
+      distanceM:
+          format.usesDistance ? appState.distanceToMeters(_num(_distBuf)) : 0,
     );
     Navigator.pop(context, SetSheetResult(set: result));
   }
 
   Widget _field(_Field f, String unit) {
     final active = _target == f;
-    final approx = f == _Field.weight ? _approxW : (f == _Field.pct ? _approxP : false);
+    final approx =
+        f == _Field.weight ? _approxW : (f == _Field.pct ? _approxP : false);
     return GestureDetector(
       onTap: () => setState(() => _target = f),
       child: Container(
@@ -202,16 +228,21 @@ class _SetSheetState extends State<_SetSheet> {
           color: AppColors.surface2,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-              color: active ? Theme.of(context).colorScheme.primary : AppColors.border,
+              color: active
+                  ? Theme.of(context).colorScheme.primary
+                  : AppColors.border,
               width: active ? 1.5 : 1),
         ),
         child: Text.rich(
           TextSpan(children: [
             if (approx) const TextSpan(text: '~'),
             TextSpan(text: _buf(f).isEmpty ? '0' : _buf(f)),
-            TextSpan(text: unit, style: const TextStyle(fontSize: 12, color: AppColors.textDim)),
+            TextSpan(
+                text: unit,
+                style: const TextStyle(fontSize: 12, color: AppColors.textDim)),
           ]),
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.text),
+          style: const TextStyle(
+              fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.text),
         ),
       ),
     );
@@ -223,7 +254,8 @@ class _SetSheetState extends State<_SetSheet> {
     final keypadOpen = _target != null;
     final format = _format;
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(18),
@@ -231,8 +263,11 @@ class _SetSheetState extends State<_SetSheet> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                _isTm ? 'Введите свой лучший подход' : (_isNew ? 'Новый подход' : 'Изменить подход'),
-                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+                _isTm
+                    ? 'Введите свой лучший подход'
+                    : (_isNew ? 'Новый подход' : 'Изменить подход'),
+                style:
+                    const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 14),
               Wrap(
@@ -241,26 +276,40 @@ class _SetSheetState extends State<_SetSheet> {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  if (format.usesWeight) _field(_Field.weight, ' ${appState.weightLabel}'),
-                  if (format.usesWeight) const Text('×', style: TextStyle(fontSize: 18, color: AppColors.textDim)),
+                  if (format.usesWeight)
+                    _field(_Field.weight, ' ${appState.weightLabel}'),
+                  if (format.usesWeight)
+                    const Text('×',
+                        style:
+                            TextStyle(fontSize: 18, color: AppColors.textDim)),
                   if (format.usesTime) _field(_Field.duration, ' с'),
                   if (format.usesTime && format.usesReps)
-                    const Text('×', style: TextStyle(fontSize: 18, color: AppColors.textDim)),
+                    const Text('×',
+                        style:
+                            TextStyle(fontSize: 18, color: AppColors.textDim)),
                   if (format.usesReps) _field(_Field.reps, ''),
                   if (format.usesDistance) ...[
-                    const Text('·', style: TextStyle(fontSize: 18, color: AppColors.textDim)),
+                    const Text('·',
+                        style:
+                            TextStyle(fontSize: 18, color: AppColors.textDim)),
                     _field(_Field.distance, ' ${appState.distanceLabel}'),
                   ],
                   if (_isCycle) ...[
-                    const Text('·', style: TextStyle(fontSize: 18, color: AppColors.textDim)),
+                    const Text('·',
+                        style:
+                            TextStyle(fontSize: 18, color: AppColors.textDim)),
                     _field(_Field.pct, ' %'),
                   ],
                 ],
               ),
               if (_isTm) ...[
                 const SizedBox(height: 10),
-                Text('Расчётный разовый максимум: ${fmtW(appState.weightFromKg(_tmResult))} ${appState.weightLabel}',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: accent)),
+                Text(
+                    'Расчётный разовый максимум: ${fmtW(appState.weightFromKg(_tmResult))} ${appState.weightLabel}',
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: accent)),
               ],
               if (!_isTm && format.usesRir)
                 AnimatedSize(
@@ -273,12 +322,19 @@ class _SetSheetState extends State<_SetSheet> {
                             children: [
                               Text(rirTexts[_rirIdx],
                                   style: TextStyle(
-                                      fontSize: 16, fontWeight: FontWeight.w800, color: scaleColors[_rirIdx])),
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w800,
+                                      color: scaleColors[_rirIdx])),
                               const SizedBox(height: 12),
-                              RirSlider(index: _rirIdx, onChanged: (i) => setState(() => _rirIdx = i)),
+                              RirSlider(
+                                  index: _rirIdx,
+                                  onChanged: (i) =>
+                                      setState(() => _rirIdx = i)),
                               const SizedBox(height: 12),
-                              const Text('Сколько повторений осталось в запасе?',
-                                  style: TextStyle(fontSize: 12, color: AppColors.textDim)),
+                              const Text(
+                                  'Сколько повторений осталось в запасе?',
+                                  style: TextStyle(
+                                      fontSize: 12, color: AppColors.textDim)),
                             ],
                           ),
                         ),
@@ -299,17 +355,23 @@ class _SetSheetState extends State<_SetSheet> {
                     child: OutlinedButton(
                       onPressed: () {
                         if (_canDelete) {
-                          Navigator.pop(context, const SetSheetResult(deleted: true));
+                          Navigator.pop(
+                              context, const SetSheetResult(deleted: true));
                         } else {
                           Navigator.pop(context);
                         }
                       },
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: _canDelete ? const Color(0xFFD06060) : AppColors.text,
+                        foregroundColor: _canDelete
+                            ? const Color(0xFFD06060)
+                            : AppColors.text,
                         side: BorderSide(
-                            color: _canDelete ? const Color(0xFFA03030) : AppColors.border,
+                            color: _canDelete
+                                ? const Color(0xFFA03030)
+                                : AppColors.border,
                             width: _canDelete ? 1.5 : 1),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                       child: Text(_canDelete ? 'Удалить' : 'Отмена'),
@@ -323,7 +385,8 @@ class _SetSheetState extends State<_SetSheet> {
                       style: FilledButton.styleFrom(
                         backgroundColor: accent,
                         foregroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                       child: Text(_isTm ? 'Применить' : 'Сохранить подход',

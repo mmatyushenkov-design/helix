@@ -6,8 +6,10 @@ import 'package:uuid/uuid.dart';
 
 const _uuid = Uuid();
 String newId() => _uuid.v4();
-String stableId(String kind, Object key) => _uuid.v5(Namespace.url.value, 'workout-tracker/$kind/$key');
-String exerciseIdForName(String name) => stableId('exercise', name.trim().toLowerCase());
+String stableId(String kind, Object key) =>
+    _uuid.v5(Namespace.url.value, 'workout-tracker/$kind/$key');
+String exerciseIdForName(String name) =>
+    stableId('exercise', name.trim().toLowerCase());
 
 enum RecordFormat {
   weightReps('WEIGHT_REPS'),
@@ -34,24 +36,30 @@ enum RecordFormat {
         (RecordFormat.timeDistance, _) => 'Время + дистанция',
       };
 
-  bool get usesWeight => this == RecordFormat.weightReps || this == RecordFormat.weightTime;
-  bool get usesReps => this == RecordFormat.weightReps || this == RecordFormat.timeReps;
+  bool get usesWeight =>
+      this == RecordFormat.weightReps || this == RecordFormat.weightTime;
+  bool get usesReps =>
+      this == RecordFormat.weightReps || this == RecordFormat.timeReps;
   bool get usesTime => this != RecordFormat.weightReps;
   bool get usesDistance => this == RecordFormat.timeDistance;
   bool get usesRir => this != RecordFormat.timeDistance;
 }
 
 enum WeightUnit { kg, lb }
+
 enum DistanceUnit { km, mi }
 
-double kgToDisplay(double kg, WeightUnit unit) => unit == WeightUnit.lb ? kg * 2.2046226218 : kg;
-double displayToKg(double value, WeightUnit unit) => unit == WeightUnit.lb ? value / 2.2046226218 : value;
+double kgToDisplay(double kg, WeightUnit unit) =>
+    unit == WeightUnit.lb ? kg * 2.2046226218 : kg;
+double displayToKg(double value, WeightUnit unit) =>
+    unit == WeightUnit.lb ? value / 2.2046226218 : value;
 double metersToDisplay(double meters, DistanceUnit unit) =>
     unit == DistanceUnit.mi ? meters / 1609.344 : meters / 1000;
 double displayToMeters(double value, DistanceUnit unit) =>
     unit == DistanceUnit.mi ? value * 1609.344 : value * 1000;
 String weightUnitLabel(WeightUnit unit) => unit == WeightUnit.lb ? 'lb' : 'кг';
-String distanceUnitLabel(DistanceUnit unit) => unit == DistanceUnit.mi ? 'mi' : 'км';
+String distanceUnitLabel(DistanceUnit unit) =>
+    unit == DistanceUnit.mi ? 'mi' : 'км';
 
 String fmtW(double w) {
   if (w == w.truncateToDouble()) return w.truncate().toString();
@@ -65,7 +73,9 @@ String fmtDuration(int seconds) {
   final h = seconds ~/ 3600;
   final m = (seconds % 3600) ~/ 60;
   final s = seconds % 60;
-  if (h > 0) return '$h:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  if (h > 0) {
+    return '$h:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
   return '$m:${s.toString().padLeft(2, '0')}';
 }
 
@@ -172,29 +182,96 @@ class Exercise {
         nameRu: j['nameRu'] as String? ?? j['name'] as String? ?? 'Упражнение',
         nameEn: j['nameEn'] as String?,
         format: RecordFormat.fromCode(j['format'] as String?),
-        defaultStepKg: (j['defaultStepKg'] as num? ?? j['defaultStep'] as num? ?? 5).toDouble(),
-        primaryMuscles: [for (final v in j['primaryMuscles'] as List? ?? const []) v.toString()],
-        secondaryMuscles: [for (final v in j['secondaryMuscles'] as List? ?? const []) v.toString()],
+        defaultStepKg:
+            (j['defaultStepKg'] as num? ?? j['defaultStep'] as num? ?? 5)
+                .toDouble(),
+        primaryMuscles: [
+          for (final v in j['primaryMuscles'] as List? ?? const []) v.toString()
+        ],
+        secondaryMuscles: [
+          for (final v in j['secondaryMuscles'] as List? ?? const [])
+            v.toString()
+        ],
         isCustom: j['isCustom'] as bool? ?? false,
         archived: j['archived'] as bool? ?? false,
       );
 }
 
 List<Exercise> defaultExercises() => [
-      Exercise(nameRu: 'Приседания', nameEn: 'Squat', primaryMuscles: ['quads', 'glutes'], secondaryMuscles: ['hamstrings', 'lower_back']),
-      Exercise(nameRu: 'Жим лёжа', nameEn: 'Bench press', defaultStepKg: 2.5, primaryMuscles: ['mid_chest'], secondaryMuscles: ['triceps', 'front_delts']),
-      Exercise(nameRu: 'Становая тяга', nameEn: 'Deadlift', primaryMuscles: ['lower_back', 'glutes'], secondaryMuscles: ['hamstrings', 'forearms']),
-      Exercise(nameRu: 'Жим лёжа узким хватом', nameEn: 'Close-grip bench press', defaultStepKg: 2.5, primaryMuscles: ['triceps'], secondaryMuscles: ['mid_chest', 'front_delts']),
-      Exercise(nameRu: 'Жим стоя', nameEn: 'Overhead press', primaryMuscles: ['front_delts', 'side_delts'], secondaryMuscles: ['triceps']),
-      Exercise(nameRu: 'Тяга штанги в наклоне', nameEn: 'Barbell row', primaryMuscles: ['lats', 'mid_back'], secondaryMuscles: ['biceps', 'lower_back']),
-      Exercise(nameRu: 'Подтягивания', nameEn: 'Pull-up', primaryMuscles: ['lats'], secondaryMuscles: ['biceps', 'mid_back']),
-      Exercise(nameRu: 'Болгарские выпады', nameEn: 'Bulgarian split squat', primaryMuscles: ['quads', 'glutes'], secondaryMuscles: ['hamstrings']),
-      Exercise(nameRu: 'Румынская тяга', nameEn: 'Romanian deadlift', primaryMuscles: ['hamstrings', 'glutes'], secondaryMuscles: ['lower_back']),
-      Exercise(nameRu: 'Французский жим', nameEn: 'Skull crusher', defaultStepKg: 2.5, primaryMuscles: ['triceps']),
-      Exercise(nameRu: 'Бицепс со штангой', nameEn: 'Barbell curl', defaultStepKg: 2.5, primaryMuscles: ['biceps'], secondaryMuscles: ['forearms']),
-      Exercise(nameRu: 'Планка', nameEn: 'Plank', format: RecordFormat.weightTime, primaryMuscles: ['abs', 'core_stability']),
-      Exercise(nameRu: 'Бег', nameEn: 'Running', format: RecordFormat.timeDistance, primaryMuscles: ['cardio']),
-      Exercise(nameRu: 'Вис на турнике', nameEn: 'Dead hang', format: RecordFormat.timeReps, primaryMuscles: ['forearms'], secondaryMuscles: ['lats']),
+      Exercise(
+          nameRu: 'Приседания',
+          nameEn: 'Squat',
+          primaryMuscles: ['quads', 'glutes'],
+          secondaryMuscles: ['hamstrings', 'lower_back']),
+      Exercise(
+          nameRu: 'Жим лёжа',
+          nameEn: 'Bench press',
+          defaultStepKg: 2.5,
+          primaryMuscles: ['mid_chest'],
+          secondaryMuscles: ['triceps', 'front_delts']),
+      Exercise(
+          nameRu: 'Становая тяга',
+          nameEn: 'Deadlift',
+          primaryMuscles: ['lower_back', 'glutes'],
+          secondaryMuscles: ['hamstrings', 'forearms']),
+      Exercise(
+          nameRu: 'Жим лёжа узким хватом',
+          nameEn: 'Close-grip bench press',
+          defaultStepKg: 2.5,
+          primaryMuscles: ['triceps'],
+          secondaryMuscles: ['mid_chest', 'front_delts']),
+      Exercise(
+          nameRu: 'Жим стоя',
+          nameEn: 'Overhead press',
+          primaryMuscles: ['front_delts', 'side_delts'],
+          secondaryMuscles: ['triceps']),
+      Exercise(
+          nameRu: 'Тяга штанги в наклоне',
+          nameEn: 'Barbell row',
+          primaryMuscles: ['lats', 'mid_back'],
+          secondaryMuscles: ['biceps', 'lower_back']),
+      Exercise(
+          nameRu: 'Подтягивания',
+          nameEn: 'Pull-up',
+          primaryMuscles: ['lats'],
+          secondaryMuscles: ['biceps', 'mid_back']),
+      Exercise(
+          nameRu: 'Болгарские выпады',
+          nameEn: 'Bulgarian split squat',
+          primaryMuscles: ['quads', 'glutes'],
+          secondaryMuscles: ['hamstrings']),
+      Exercise(
+          nameRu: 'Румынская тяга',
+          nameEn: 'Romanian deadlift',
+          primaryMuscles: ['hamstrings', 'glutes'],
+          secondaryMuscles: ['lower_back']),
+      Exercise(
+          nameRu: 'Французский жим',
+          nameEn: 'Skull crusher',
+          defaultStepKg: 2.5,
+          primaryMuscles: ['triceps']),
+      Exercise(
+          nameRu: 'Бицепс со штангой',
+          nameEn: 'Barbell curl',
+          defaultStepKg: 2.5,
+          primaryMuscles: ['biceps'],
+          secondaryMuscles: ['forearms']),
+      Exercise(
+          nameRu: 'Планка',
+          nameEn: 'Plank',
+          format: RecordFormat.weightTime,
+          primaryMuscles: ['abs', 'core_stability']),
+      Exercise(
+          nameRu: 'Бег',
+          nameEn: 'Running',
+          format: RecordFormat.timeDistance,
+          primaryMuscles: ['cardio']),
+      Exercise(
+          nameRu: 'Вис на турнике',
+          nameEn: 'Dead hang',
+          format: RecordFormat.timeReps,
+          primaryMuscles: ['forearms'],
+          secondaryMuscles: ['lats']),
     ];
 
 final exerciseNames = [for (final e in defaultExercises()) e.nameRu];
@@ -238,7 +315,9 @@ class CycleSet {
 class CycleDay {
   List<CycleSet> sets;
   CycleDay(this.sets);
-  Map<String, dynamic> toJson() => {'sets': [for (final s in sets) s.toJson()]};
+  Map<String, dynamic> toJson() => {
+        'sets': [for (final s in sets) s.toJson()]
+      };
   factory CycleDay.fromJson(Map<String, dynamic> j) =>
       CycleDay([for (final s in j['sets'] as List) CycleSet.fromJson(s)]);
 }
@@ -302,7 +381,8 @@ double setWeight(Cycle c, CycleSet s) {
   return ((exact / c.step).round() * c.step * 100).roundToDouble() / 100;
 }
 
-String dayChipLabel(Cycle c, int i) => c.days.length <= 5 ? 'день ${i + 1}' : 'д.${i + 1}';
+String dayChipLabel(Cycle c, int i) =>
+    c.days.length <= 5 ? 'день ${i + 1}' : 'д.${i + 1}';
 
 class DiarySet {
   double w;
@@ -384,7 +464,9 @@ class DiaryEntry {
         exerciseId: j['exerciseId']?.toString(),
         name: j['name'] as String,
         recordFormat: RecordFormat.fromCode(j['recordFormat'] as String?),
-        cycleId: j['cycleId'] is int ? stableId('cycle', j['cycleId']) : j['cycleId']?.toString(),
+        cycleId: j['cycleId'] is int
+            ? stableId('cycle', j['cycleId'])
+            : j['cycleId']?.toString(),
         dayIdx: j['dayIdx'] as int?,
         templateItemId: j['templateItemId']?.toString(),
         done: j['done'] as bool? ?? false,
@@ -397,12 +479,19 @@ class TemplateItem {
   String id;
   String exerciseId;
   List<DiarySet> sets;
-  TemplateItem({String? id, required this.exerciseId, this.sets = const []}) : id = id ?? newId();
-  Map<String, dynamic> toJson() => {'id': id, 'exerciseId': exerciseId, 'sets': [for (final s in sets) s.toJson()]};
+  TemplateItem({String? id, required this.exerciseId, this.sets = const []})
+      : id = id ?? newId();
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'exerciseId': exerciseId,
+        'sets': [for (final s in sets) s.toJson()]
+      };
   factory TemplateItem.fromJson(Map<String, dynamic> j) => TemplateItem(
         id: j['id']?.toString(),
         exerciseId: j['exerciseId'] as String,
-        sets: [for (final s in j['sets'] as List? ?? const []) DiarySet.fromJson(s)],
+        sets: [
+          for (final s in j['sets'] as List? ?? const []) DiarySet.fromJson(s)
+        ],
       );
 }
 
@@ -411,7 +500,12 @@ class WorkoutTemplate {
   String name;
   String description;
   List<TemplateItem> items;
-  WorkoutTemplate({String? id, required this.name, this.description = '', this.items = const []}) : id = id ?? newId();
+  WorkoutTemplate(
+      {String? id,
+      required this.name,
+      this.description = '',
+      this.items = const []})
+      : id = id ?? newId();
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
@@ -422,15 +516,34 @@ class WorkoutTemplate {
         id: j['id']?.toString(),
         name: j['name'] as String,
         description: j['description'] as String? ?? '',
-        items: [for (final i in j['items'] as List? ?? const []) TemplateItem.fromJson(i)],
+        items: [
+          for (final i in j['items'] as List? ?? const [])
+            TemplateItem.fromJson(i)
+        ],
       );
 }
 
 List<CycleDay> tmpl531days() => [
-      CycleDay([CycleSet(pct: 65, reps: 5, rir: 2), CycleSet(pct: 75, reps: 5, rir: 1), CycleSet(pct: 85, reps: 5, rir: 0)]),
-      CycleDay([CycleSet(pct: 70, reps: 3, rir: 2), CycleSet(pct: 80, reps: 3, rir: 1), CycleSet(pct: 90, reps: 3, rir: 0)]),
-      CycleDay([CycleSet(pct: 75, reps: 5, rir: 1), CycleSet(pct: 85, reps: 3, rir: 1), CycleSet(pct: 95, reps: 1, rir: 0)]),
-      CycleDay([CycleSet(pct: 40, reps: 5, rir: 5), CycleSet(pct: 50, reps: 5, rir: 5), CycleSet(pct: 60, reps: 5, rir: 5)]),
+      CycleDay([
+        CycleSet(pct: 65, reps: 5, rir: 2),
+        CycleSet(pct: 75, reps: 5, rir: 1),
+        CycleSet(pct: 85, reps: 5, rir: 0)
+      ]),
+      CycleDay([
+        CycleSet(pct: 70, reps: 3, rir: 2),
+        CycleSet(pct: 80, reps: 3, rir: 1),
+        CycleSet(pct: 90, reps: 3, rir: 0)
+      ]),
+      CycleDay([
+        CycleSet(pct: 75, reps: 5, rir: 1),
+        CycleSet(pct: 85, reps: 3, rir: 1),
+        CycleSet(pct: 95, reps: 1, rir: 0)
+      ]),
+      CycleDay([
+        CycleSet(pct: 40, reps: 5, rir: 5),
+        CycleSet(pct: 50, reps: 5, rir: 5),
+        CycleSet(pct: 60, reps: 5, rir: 5)
+      ]),
     ];
 
 String rirLabel(int code) => switch (code) {
@@ -443,4 +556,5 @@ String rirLabel(int code) => switch (code) {
 double epley(double w, int r) => w * (1 + r / 30);
 double roundDownToStep(double v, double step) => (v / step).floor() * step;
 double calcTM(double w, int r) => (w * (1 + r / 30)).roundToDouble();
-double defaultStep(String name) => (name.contains('Жим') && !name.contains('стоя')) ? 2.5 : 5;
+double defaultStep(String name) =>
+    (name.contains('Жим') && !name.contains('стоя')) ? 2.5 : 5;

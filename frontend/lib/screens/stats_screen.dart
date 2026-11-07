@@ -7,8 +7,18 @@ import '../theme.dart';
 import '../widgets/set_box.dart';
 
 const _monthsRu = [
-  'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
-  'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря',
+  'января',
+  'февраля',
+  'марта',
+  'апреля',
+  'мая',
+  'июня',
+  'июля',
+  'августа',
+  'сентября',
+  'октября',
+  'ноября',
+  'декабря',
 ];
 
 class SessionMetrics {
@@ -42,14 +52,16 @@ class SessionMetrics {
 SessionMetrics? sessionMetrics(String date, DiaryEntry e) {
   final sets = e.sets.where((s) => !s.planned).toList();
   if (sets.isEmpty) return null;
-  double maxDouble(Iterable<double> values) => values.fold(0.0, (a, b) => b > a ? b : a);
+  double maxDouble(Iterable<double> values) =>
+      values.fold(0.0, (a, b) => b > a ? b : a);
   final work = sets.where((s) => s.rir >= 0).toList();
   final e1rmSets = work.isEmpty ? sets : work;
   return SessionMetrics(
     date: date,
     format: e.recordFormat,
     e1rm: e.recordFormat == RecordFormat.weightReps
-        ? maxDouble(e1rmSets.map((s) => s.w * (1 + (s.reps + s.rir.clamp(0, 6)) / 30)))
+        ? maxDouble(
+            e1rmSets.map((s) => s.w * (1 + (s.reps + s.rir.clamp(0, 6)) / 30)))
         : 0,
     maxWeight: maxDouble(sets.map((s) => s.w)),
     volume: e.recordFormat == RecordFormat.weightReps
@@ -85,7 +97,8 @@ class MetricDef {
 
 List<MetricDef> metricsFor(RecordFormat format) => switch (format) {
       RecordFormat.weightReps => const [
-          MetricDef('e1rm', 'Расчётный разовый максимум', 'Estimated one-rep max'),
+          MetricDef(
+              'e1rm', 'Расчётный разовый максимум', 'Estimated one-rep max'),
           MetricDef('maxw', 'Максимальный сделанный вес', 'Max weight'),
           MetricDef('vol', 'Объём (тоннаж) тренировки', 'Workout volume'),
           MetricDef('maxr', 'Макс. повторений', 'Max reps'),
@@ -148,7 +161,13 @@ String formatMetric(double value, String key) {
       : rounded.toStringAsFixed(1).replaceAll('.', ',');
 }
 
-const _periods = [('1 мес', 30), ('3 мес', 90), ('6 мес', 183), ('1 год', 365), ('Всё', 36500)];
+const _periods = [
+  ('1 мес', 30),
+  ('3 мес', 90),
+  ('6 мес', 183),
+  ('1 год', 365),
+  ('Всё', 36500)
+];
 
 class StatsListScreen extends StatelessWidget {
   final bool embedded;
@@ -171,9 +190,12 @@ class StatsListScreen extends StatelessWidget {
         if (embedded)
           Padding(
             padding: const EdgeInsets.only(bottom: 14),
-            child: Text(tr('stats'), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+            child: Text(tr('stats'),
+                style:
+                    const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
           ),
-        if (ids.isEmpty) Text(tr('noData'), style: const TextStyle(color: AppColors.textDim)),
+        if (ids.isEmpty)
+          Text(tr('noData'), style: const TextStyle(color: AppColors.textDim)),
         for (final id in ids)
           Container(
             margin: const EdgeInsets.only(bottom: 8),
@@ -185,22 +207,31 @@ class StatsListScreen extends StatelessWidget {
             child: InkWell(
               borderRadius: BorderRadius.circular(14),
               onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => StatsDetailScreen(exerciseId: id, name: appState.exerciseName(id)))),
+                  builder: (_) => StatsDetailScreen(
+                      exerciseId: id, name: appState.exerciseName(id)))),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
                 child: Row(
                   children: [
-                    Expanded(child: Text(appState.exerciseName(id), style: const TextStyle(fontSize: 15))),
+                    Expanded(
+                        child: Text(appState.exerciseName(id),
+                            style: const TextStyle(fontSize: 15))),
                     if (appState.cycles.any((c) => c.exerciseId == id))
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 3),
                         decoration: BoxDecoration(
-                            color: AppColors.accentDim(accent), borderRadius: BorderRadius.circular(12)),
-                        child: Text('в цикле', style: TextStyle(fontSize: 12, color: accent)),
+                            color: AppColors.accentDim(accent),
+                            borderRadius: BorderRadius.circular(12)),
+                        child: Text('в цикле',
+                            style: TextStyle(fontSize: 12, color: accent)),
                       )
                     else
-                      Text('${all.where((e) => e.exerciseId == id).length} трен.',
-                          style: const TextStyle(fontSize: 12, color: AppColors.textDim)),
+                      Text(
+                          '${all.where((e) => e.exerciseId == id).length} трен.',
+                          style: const TextStyle(
+                              fontSize: 12, color: AppColors.textDim)),
                   ],
                 ),
               ),
@@ -209,21 +240,25 @@ class StatsListScreen extends StatelessWidget {
       ],
     );
     if (embedded) return body;
-    return Scaffold(appBar: AppBar(leading: const BackButton(), title: Text(tr('stats'))), body: body);
+    return Scaffold(
+        appBar: AppBar(leading: const BackButton(), title: Text(tr('stats'))),
+        body: body);
   }
 }
 
 class StatsDetailScreen extends StatefulWidget {
   final String exerciseId;
   final String name;
-  const StatsDetailScreen({super.key, required this.exerciseId, required this.name});
+  const StatsDetailScreen(
+      {super.key, required this.exerciseId, required this.name});
 
   @override
   State<StatsDetailScreen> createState() => _StatsDetailScreenState();
 }
 
 class _StatsDetailScreenState extends State<StatsDetailScreen> {
-  late RecordFormat format = appState.exerciseById(widget.exerciseId)?.format ?? RecordFormat.weightReps;
+  late RecordFormat format = appState.exerciseById(widget.exerciseId)?.format ??
+      RecordFormat.weightReps;
   late String metric = metricsFor(format).first.key;
   int period = 90;
   bool history = false;
@@ -236,7 +271,8 @@ class _StatsDetailScreenState extends State<StatsDetailScreen> {
     final cutoff = DateTime.now().subtract(Duration(days: period));
     final points = [
       for (final (key, entry) in all)
-        if (DateTime.parse(key).isAfter(cutoff) && sessionMetrics(key, entry) != null)
+        if (DateTime.parse(key).isAfter(cutoff) &&
+            sessionMetrics(key, entry) != null)
           sessionMetrics(key, entry)!,
     ];
     final defs = metricsFor(format);
@@ -257,7 +293,8 @@ class _StatsDetailScreenState extends State<StatsDetailScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 9),
                         decoration: BoxDecoration(
-                          color: history == (i == 1) ? accent : AppColors.surface2,
+                          color:
+                              history == (i == 1) ? accent : AppColors.surface2,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Center(
@@ -265,7 +302,9 @@ class _StatsDetailScreenState extends State<StatsDetailScreen> {
                               style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
-                                  color: history == (i == 1) ? Colors.black : AppColors.textDim)),
+                                  color: history == (i == 1)
+                                      ? Colors.black
+                                      : AppColors.textDim)),
                         ),
                       ),
                     ),
@@ -293,16 +332,21 @@ class _StatsDetailScreenState extends State<StatsDetailScreen> {
                             child: InkWell(
                               onTap: () => setState(() => period = days),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 7),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 7),
                                 decoration: BoxDecoration(
-                                  color: period == days ? accent : AppColors.surface2,
+                                  color: period == days
+                                      ? accent
+                                      : AppColors.surface2,
                                   borderRadius: BorderRadius.circular(9),
                                 ),
                                 child: Center(
                                   child: Text(label,
                                       style: TextStyle(
                                           fontSize: 12,
-                                          color: period == days ? Colors.black : AppColors.textDim)),
+                                          color: period == days
+                                              ? Colors.black
+                                              : AppColors.textDim)),
                                 ),
                               ),
                             ),
@@ -314,7 +358,8 @@ class _StatsDetailScreenState extends State<StatsDetailScreen> {
                   LayoutBuilder(
                     builder: (context, cons) => CustomPaint(
                       size: Size(cons.maxWidth, cons.maxWidth * 200 / 360),
-                      painter: _ChartPainter(points: points, metric: metric, accent: accent),
+                      painter: _ChartPainter(
+                          points: points, metric: metric, accent: accent),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -330,7 +375,9 @@ class _StatsDetailScreenState extends State<StatsDetailScreen> {
                           onTap: () => setState(() => metricOpen = !metricOpen),
                           child: Padding(
                             padding: const EdgeInsets.all(11),
-                            child: Center(child: Text('${defs.firstWhere((d) => d.key == metric).label()} ▾')),
+                            child: Center(
+                                child: Text(
+                                    '${defs.firstWhere((d) => d.key == metric).label()} ▾')),
                           ),
                         ),
                         AnimatedSize(
@@ -347,12 +394,16 @@ class _StatsDetailScreenState extends State<StatsDetailScreen> {
                                         width: double.infinity,
                                         padding: const EdgeInsets.all(11),
                                         decoration: const BoxDecoration(
-                                            border: Border(top: BorderSide(color: AppColors.border))),
+                                            border: Border(
+                                                top: BorderSide(
+                                                    color: AppColors.border))),
                                         child: Center(
                                           child: Text(def.label(),
                                               style: TextStyle(
                                                   fontSize: 13,
-                                                  color: metric == def.key ? accent : AppColors.textDim)),
+                                                  color: metric == def.key
+                                                      ? accent
+                                                      : AppColors.textDim)),
                                         ),
                                       ),
                                     ),
@@ -375,21 +426,37 @@ class _StatsDetailScreenState extends State<StatsDetailScreen> {
   }
 
   Widget _buildTiles(List<(String, DiaryEntry)> all, Color accent) {
-    final metrics = [for (final (k, e) in all) if (sessionMetrics(k, e) != null) sessionMetrics(k, e)!];
-    if (metrics.isEmpty) return Text(tr('noData'), style: const TextStyle(color: AppColors.textDim));
+    final metrics = [
+      for (final (k, e) in all)
+        if (sessionMetrics(k, e) != null) sessionMetrics(k, e)!
+    ];
+    if (metrics.isEmpty) {
+      return Text(tr('noData'),
+          style: const TextStyle(color: AppColors.textDim));
+    }
     final defs = metricsFor(format);
-    String date(String value) => '${value.substring(8, 10)}.${value.substring(5, 7)}.${value.substring(0, 4)}';
-    SessionMetrics best(String key) =>
-        metrics.reduce((a, b) => metricValue(b, key) > metricValue(a, key) ? b : a);
+    String date(String value) =>
+        '${value.substring(8, 10)}.${value.substring(5, 7)}.${value.substring(0, 4)}';
+    SessionMetrics best(String key) => metrics
+        .reduce((a, b) => metricValue(b, key) > metricValue(a, key) ? b : a);
     final tiles = <(String, String, String)>[
       for (final def in defs.take(4))
         (
           def.label(),
-          '${formatMetric(metricValue(best(def.key), def.key), def.key)} ${metricUnit(def.key)}'.trim(),
+          '${formatMetric(metricValue(best(def.key), def.key), def.key)} ${metricUnit(def.key)}'
+              .trim(),
           date(best(def.key).date)
         ),
-      ('Всего повторений', '${metrics.fold(0, (a, p) => a + p.totalReps)}', 'за всё время'),
-      ('Всего подходов', '${metrics.fold(0, (a, p) => a + p.sets)}', 'за всё время'),
+      (
+        'Всего повторений',
+        '${metrics.fold(0, (a, p) => a + p.totalReps)}',
+        'за всё время'
+      ),
+      (
+        'Всего подходов',
+        '${metrics.fold(0, (a, p) => a + p.sets)}',
+        'за всё время'
+      ),
       (
         format == RecordFormat.timeDistance
             ? 'Общая дистанция'
@@ -428,14 +495,21 @@ class _StatsDetailScreenState extends State<StatsDetailScreen> {
                 Text(label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11, color: AppColors.textDim)),
+                    style: const TextStyle(
+                        fontSize: 11, color: AppColors.textDim)),
                 const SizedBox(height: 4),
                 FittedBox(
                   fit: BoxFit.scaleDown,
-                  child: Text(value, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: accent)),
+                  child: Text(value,
+                      style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          color: accent)),
                 ),
                 const SizedBox(height: 2),
-                Text(subtitle, style: const TextStyle(fontSize: 11, color: AppColors.textDim)),
+                Text(subtitle,
+                    style: const TextStyle(
+                        fontSize: 11, color: AppColors.textDim)),
               ],
             ),
           ),
@@ -459,11 +533,19 @@ class _StatsDetailScreenState extends State<StatsDetailScreen> {
               border: Border.all(color: AppColors.border),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('${date.day} ${_monthsRu[date.month - 1]}',
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-              Text(ago == 0 ? 'сегодня' : ago == 1 ? 'вчера' : '$ago дн. назад',
-                  style: const TextStyle(fontSize: 12, color: AppColors.textDim)),
+                  style: const TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.w700)),
+              Text(
+                  ago == 0
+                      ? 'сегодня'
+                      : ago == 1
+                          ? 'вчера'
+                          : '$ago дн. назад',
+                  style:
+                      const TextStyle(fontSize: 12, color: AppColors.textDim)),
               const SizedBox(height: 12),
               SetFlow(sets: [
                 for (final set in entry.sets)
@@ -488,31 +570,54 @@ class _ChartPainter extends CustomPainter {
   final List<SessionMetrics> points;
   final String metric;
   final Color accent;
-  const _ChartPainter({required this.points, required this.metric, required this.accent});
+  const _ChartPainter(
+      {required this.points, required this.metric, required this.accent});
 
   @override
   void paint(Canvas canvas, Size size) {
     if (points.isEmpty) return;
     canvas.scale(size.width / 360);
-    const width = 360.0, height = 200.0, left = 36.0, right = 8.0, top = 8.0, bottom = 20.0;
+    const width = 360.0,
+        height = 200.0,
+        left = 36.0,
+        right = 8.0,
+        top = 8.0,
+        bottom = 20.0;
     final values = [for (final p in points) metricValue(p, metric)];
     final min = values.reduce((a, b) => a < b ? a : b);
     final max = values.reduce((a, b) => a > b ? a : b);
-    final range = max - min != 0 ? max - min : (max.abs() * 0.1 != 0 ? max.abs() * 0.1 : 1.0);
+    final range = max - min != 0
+        ? max - min
+        : (max.abs() * 0.1 != 0 ? max.abs() * 0.1 : 1.0);
     final span = range / 0.5;
     final lo = min - span * 0.4, hi = max + span * 0.1;
-    double x(int i) => left + (points.length == 1 ? (width - left - right) / 2 : i * (width - left - right) / (points.length - 1));
+    double x(int i) =>
+        left +
+        (points.length == 1
+            ? (width - left - right) / 2
+            : i * (width - left - right) / (points.length - 1));
     double y(double v) => top + (hi - v) / (hi - lo) * (height - top - bottom);
     final spread = hi - lo;
     final ladder = metric == 'vol' || metric == 'time' || metric == 'maxdur'
         ? [10.0, 20, 50, 100, 200, 500, 1000, 2000, 5000]
         : metric == 'maxr' || metric == 'reps'
-            ? spread < 10 ? [1.0, 2, 4] : spread < 20 ? [2.0, 4, 10] : [5.0, 10, 20, 50]
+            ? spread < 10
+                ? [1.0, 2, 4]
+                : spread < 20
+                    ? [2.0, 4, 10]
+                    : [5.0, 10, 20, 50]
             : [2.5, 5, 10, 25, 50, 100];
-    final step = ladder.firstWhere((s) => spread / s <= 20, orElse: () => ladder.last);
+    final step =
+        ladder.firstWhere((s) => spread / s <= 20, orElse: () => ladder.last);
     final lines = spread / step;
-    final every = lines > 20 ? 5 : lines > 10 ? 2 : 1;
-    final grid = Paint()..color = const Color(0xFF333333)..strokeWidth = 0.7;
+    final every = lines > 20
+        ? 5
+        : lines > 10
+            ? 2
+            : 1;
+    final grid = Paint()
+      ..color = const Color(0xFF333333)
+      ..strokeWidth = 0.7;
     const style = TextStyle(fontSize: 9, color: Color(0xFF777777));
     final k0 = (lo / step - 1e-9).ceil(), k1 = (hi / step + 1e-9).floor();
     for (var k = k0; k <= k1; k++) {
@@ -520,14 +625,22 @@ class _ChartPainter extends CustomPainter {
       final gy = y(value);
       canvas.drawLine(Offset(left, gy), Offset(width - right, gy), grid);
       if ((k - k0) % every == 0) {
-        _text(canvas, formatMetric(value, metric), Offset(left - 5, gy), style, alignRight: true);
+        _text(canvas, formatMetric(value, metric), Offset(left - 5, gy), style,
+            alignRight: true);
       }
     }
-    final indexes = <int>{0, ((points.length - 1) * .25).round(), ((points.length - 1) * .5).round(),
-      ((points.length - 1) * .75).round(), points.length - 1};
+    final indexes = <int>{
+      0,
+      ((points.length - 1) * .25).round(),
+      ((points.length - 1) * .5).round(),
+      ((points.length - 1) * .75).round(),
+      points.length - 1
+    };
     for (final i in indexes) {
       final date = points[i].date;
-      _text(canvas, '${date.substring(8, 10)}.${date.substring(5, 7)}', Offset(x(i), height - 8), style, center: true);
+      _text(canvas, '${date.substring(8, 10)}.${date.substring(5, 7)}',
+          Offset(x(i), height - 8), style,
+          center: true);
     }
     final path = Path();
     for (var i = 0; i < points.length; i++) {
@@ -538,7 +651,12 @@ class _ChartPainter extends CustomPainter {
         path.lineTo(point.dx, point.dy);
       }
     }
-    canvas.drawPath(path, Paint()..color = accent..strokeWidth = 2.5..style = PaintingStyle.stroke);
+    canvas.drawPath(
+        path,
+        Paint()
+          ..color = accent
+          ..strokeWidth = 2.5
+          ..style = PaintingStyle.stroke);
     for (var i = 0; i < points.length; i++) {
       canvas.drawCircle(Offset(x(i), y(values[i])), 4, Paint()..color = accent);
     }
@@ -546,11 +664,19 @@ class _ChartPainter extends CustomPainter {
 
   void _text(Canvas canvas, String value, Offset at, TextStyle style,
       {bool alignRight = false, bool center = false}) {
-    final painter = TextPainter(text: TextSpan(text: value, style: style), textDirection: TextDirection.ltr)..layout();
-    final dx = alignRight ? at.dx - painter.width : center ? at.dx - painter.width / 2 : at.dx;
+    final painter = TextPainter(
+        text: TextSpan(text: value, style: style),
+        textDirection: TextDirection.ltr)
+      ..layout();
+    final dx = alignRight
+        ? at.dx - painter.width
+        : center
+            ? at.dx - painter.width / 2
+            : at.dx;
     painter.paint(canvas, Offset(dx, at.dy - painter.height / 2));
   }
 
   @override
-  bool shouldRepaint(_ChartPainter old) => old.points != points || old.metric != metric || old.accent != accent;
+  bool shouldRepaint(_ChartPainter old) =>
+      old.points != points || old.metric != metric || old.accent != accent;
 }

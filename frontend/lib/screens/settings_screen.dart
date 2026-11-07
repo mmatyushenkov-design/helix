@@ -6,7 +6,6 @@ import '../state/app_state.dart';
 import '../state/strings.dart';
 import '../storage/backup_service.dart';
 import '../theme.dart';
-import 'exercise_catalog_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -19,18 +18,26 @@ class SettingsScreen extends StatelessWidget {
     AppColors.accentRed,
   ];
 
-  Future<void> _runFileAction(BuildContext context, Future<String> Function() action) async {
+  Future<void> _runFileAction(
+      BuildContext context, Future<String> Function() action) async {
     try {
       final path = await action();
-      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(path)));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(path)));
+      }
     } catch (e) {
-      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('$e')));
+      }
     }
   }
 
   Future<void> _restore(BuildContext context) async {
     try {
-      final picked = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['zip']);
+      final picked = await FilePicker.platform
+          .pickFiles(type: FileType.custom, allowedExtensions: ['zip']);
       final path = picked?.files.single.path;
       if (path == null) return;
       final service = LocalBackupService();
@@ -39,10 +46,14 @@ class SettingsScreen extends StatelessWidget {
       appState.loadJson(snapshot);
       appState.touch();
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Данные восстановлены')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Данные восстановлены')));
       }
     } catch (e) {
-      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('$e')));
+      }
     }
   }
 
@@ -55,12 +66,17 @@ class SettingsScreen extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.only(bottom: 14),
-            child: Text(tr('settings'), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+            child: Text(tr('settings'),
+                style:
+                    const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
           ),
           _group(tr('appearance'), [
             _row(
               tr('accent'),
-              trailing: Row(children: [for (final c in _accents) _AccentDot(color: c, selected: appState.accent == c)]),
+              trailing: Row(children: [
+                for (final c in _accents)
+                  _AccentDot(color: c, selected: appState.accent == c)
+              ]),
             ),
             _row(
               tr('language'),
@@ -100,29 +116,29 @@ class SettingsScreen extends StatelessWidget {
                   DropdownMenuItem(value: DistanceUnit.km, child: Text('км')),
                   DropdownMenuItem(value: DistanceUnit.mi, child: Text('mi')),
                 ],
-                onChanged: (v) => appState.setDistanceUnit(v ?? DistanceUnit.km),
+                onChanged: (v) =>
+                    appState.setDistanceUnit(v ?? DistanceUnit.km),
               ),
             ),
           ]),
           _group(tr('data'), [
             _row(
-              tr('manageExercises'),
-              trailing: const _Val('›'),
-              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ExerciseCatalogScreen())),
-            ),
-            _row(
               tr('backup'),
               trailing: const _Val('›'),
-              onTap: () => _runFileAction(context, () => LocalBackupService().createBackup(appState.toJson())),
+              onTap: () => _runFileAction(context,
+                  () => LocalBackupService().createBackup(appState.toJson())),
             ),
-            _row(tr('restore'), trailing: const _Val('›'), onTap: () => _restore(context)),
+            _row(tr('restore'),
+                trailing: const _Val('›'), onTap: () => _restore(context)),
             _row(
               tr('exportCsv'),
               trailing: const _Val('›'),
-              onTap: () => _runFileAction(context, () => LocalBackupService().exportCsv(appState.toJson())),
+              onTap: () => _runFileAction(context,
+                  () => LocalBackupService().exportCsv(appState.toJson())),
             ),
           ]),
-          _group(tr('about'), [_row(tr('version'), trailing: const _Val('0.2.0-local'))]),
+          _group(tr('about'),
+              [_row(tr('version'), trailing: const _Val('0.2.0-local'))]),
         ],
       ),
     );
@@ -137,7 +153,10 @@ class SettingsScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
             child: Text(title.toUpperCase(),
-                style: const TextStyle(fontSize: 13, color: AppColors.textDim, letterSpacing: 0.5)),
+                style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textDim,
+                    letterSpacing: 0.5)),
           ),
           ...rows,
         ],
@@ -161,7 +180,8 @@ class SettingsScreen extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(child: Text(label, style: const TextStyle(fontSize: 14))),
+              Expanded(
+                  child: Text(label, style: const TextStyle(fontSize: 14))),
               trailing,
             ],
           ),
@@ -175,7 +195,8 @@ class _Val extends StatelessWidget {
   final String text;
   const _Val(this.text);
   @override
-  Widget build(BuildContext context) => Text(text, style: const TextStyle(fontSize: 14, color: AppColors.textDim));
+  Widget build(BuildContext context) => Text(text,
+      style: const TextStyle(fontSize: 14, color: AppColors.textDim));
 }
 
 class _AccentDot extends StatelessWidget {
@@ -198,9 +219,14 @@ class _AccentDot extends StatelessWidget {
             decoration: BoxDecoration(
               color: color,
               shape: BoxShape.circle,
-              border: Border.all(color: selected ? Colors.white : Colors.transparent, width: 2),
+              border: Border.all(
+                  color: selected ? Colors.white : Colors.transparent,
+                  width: 2),
               boxShadow: selected
-                  ? [const BoxShadow(color: AppColors.bg, spreadRadius: 3), BoxShadow(color: color, spreadRadius: 5)]
+                  ? [
+                      const BoxShadow(color: AppColors.bg, spreadRadius: 3),
+                      BoxShadow(color: color, spreadRadius: 5)
+                    ]
                   : null,
             ),
           ),

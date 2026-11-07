@@ -13,7 +13,8 @@ Future<String?> showExercisePicker(BuildContext context) {
     context: context,
     isScrollControlled: true,
     backgroundColor: AppColors.surface,
-    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+    shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
     builder: (_) => const _ExercisePicker(),
   );
 }
@@ -39,11 +40,15 @@ class _ExercisePickerState extends State<_ExercisePicker> {
         return false;
       }
       if (_group == null) return true;
-      final codes = muscleCatalog.firstWhere((g) => g.code == _group).muscles.map((m) => m.code);
+      final codes = muscleCatalog
+          .firstWhere((g) => g.code == _group)
+          .muscles
+          .map((m) => m.code);
       return [...e.primaryMuscles, ...e.secondaryMuscles].any(codes.contains);
     }).toList();
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: SizedBox(
         height: MediaQuery.of(context).size.height * 0.7,
         child: Padding(
@@ -56,7 +61,8 @@ class _ExercisePickerState extends State<_ExercisePicker> {
                   hintText: tr('searchExercise'),
                   filled: true,
                   fillColor: AppColors.surface2,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
                 onChanged: (v) => setState(() => _filter = v),
               ),
@@ -69,7 +75,8 @@ class _ExercisePickerState extends State<_ExercisePicker> {
                 items: [
                   DropdownMenuItem(value: null, child: Text(tr('allGroups'))),
                   for (final g in muscleCatalog)
-                    DropdownMenuItem(value: g.code, child: Text(g.name(language))),
+                    DropdownMenuItem(
+                        value: g.code, child: Text(g.name(language))),
                 ],
                 onChanged: (v) => setState(() => _group = v),
               ),
@@ -82,10 +89,13 @@ class _ExercisePickerState extends State<_ExercisePicker> {
                     return InkWell(
                       onTap: () => Navigator.pop(context, exercise.id),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 14, horizontal: 6),
                         decoration: const BoxDecoration(
-                            border: Border(bottom: BorderSide(color: AppColors.border))),
-                        child: Text(exercise.name(language), style: const TextStyle(fontSize: 15)),
+                            border: Border(
+                                bottom: BorderSide(color: AppColors.border))),
+                        child: Text(exercise.name(language),
+                            style: const TextStyle(fontSize: 15)),
                       ),
                     );
                   },
@@ -113,26 +123,32 @@ class CyclesScreen extends StatelessWidget {
           children: [
             Row(
               children: [
-                Text(tr('cycles'), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+                Text(tr('cycles'),
+                    style: const TextStyle(
+                        fontSize: 24, fontWeight: FontWeight.w800)),
                 const Spacer(),
                 FilledButton(
                   onPressed: () async {
                     final exerciseId = await showExercisePicker(context);
                     if (exerciseId == null || !context.mounted) return;
                     final c = appState.addCycle(exerciseId);
-                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => CycleEditScreen(cycle: c)));
+                    Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => CycleEditScreen(cycle: c)));
                   },
                   style: FilledButton.styleFrom(
                     backgroundColor: accent,
                     foregroundColor: Colors.black,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20)),
                   ),
-                  child: Text(tr('newCycle'), style: const TextStyle(fontWeight: FontWeight.w700)),
+                  child: Text(tr('newCycle'),
+                      style: const TextStyle(fontWeight: FontWeight.w700)),
                 ),
               ],
             ),
             const SizedBox(height: 14),
-            for (final c in appState.cycles) CycleCard(cycle: c, accent: accent),
+            for (final c in appState.cycles)
+              CycleCard(cycle: c, accent: accent),
           ],
         );
       },

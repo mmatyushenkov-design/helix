@@ -5,7 +5,8 @@ class DashedBorder extends StatelessWidget {
   final Widget child;
   final Color color;
   final double radius;
-  const DashedBorder({super.key, required this.child, required this.color, this.radius = 12});
+  const DashedBorder(
+      {super.key, required this.child, required this.color, this.radius = 12});
 
   @override
   Widget build(BuildContext context) => CustomPaint(
@@ -21,7 +22,8 @@ class _DashedPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final rrect = RRect.fromRectAndRadius(Offset.zero & size, Radius.circular(radius));
+    final rrect =
+        RRect.fromRectAndRadius(Offset.zero & size, Radius.circular(radius));
     final paint = Paint()
       ..color = color
       ..strokeWidth = 1
@@ -37,5 +39,6 @@ class _DashedPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_DashedPainter old) => old.color != color || old.radius != radius;
+  bool shouldRepaint(_DashedPainter old) =>
+      old.color != color || old.radius != radius;
 }

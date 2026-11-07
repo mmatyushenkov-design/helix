@@ -29,7 +29,10 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
   }
 
   Future<void> _editSet(int dayIdx, int setIdx) async {
-    final res = await showSetSheet(context, mode: SetSheetMode.editCycle, cycle: c, initial: c.days[dayIdx].sets[setIdx]);
+    final res = await showSetSheet(context,
+        mode: SetSheetMode.editCycle,
+        cycle: c,
+        initial: c.days[dayIdx].sets[setIdx]);
     if (res == null) return;
     _mutate(() {
       if (res.deleted) {
@@ -41,13 +44,15 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
   }
 
   Future<void> _addSet(int dayIdx) async {
-    final res = await showSetSheet(context, mode: SetSheetMode.newCycleSet, cycle: c);
+    final res =
+        await showSetSheet(context, mode: SetSheetMode.newCycleSet, cycle: c);
     if (res == null || res.set == null) return;
     _mutate(() => c.days[dayIdx].sets.add(res.set!));
   }
 
   Future<void> _editTm() async {
-    final res = await showSetSheet(context, mode: SetSheetMode.tmCalc, cycle: c);
+    final res =
+        await showSetSheet(context, mode: SetSheetMode.tmCalc, cycle: c);
     if (res == null || res.tm == null) return;
     _mutate(() {
       c.tm = res.tm!;
@@ -68,7 +73,8 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
           spacing: 6,
           children: [
             Text(appState.exerciseName(c.exerciseId, c.name),
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
             FlameLabel(
                 text:
                     '${fmtW(appState.weightFromKg(c.bestW))}×${c.bestR} | ${fmtW(appState.weightFromKg(c.tm))} ${appState.weightLabel}'),
@@ -80,12 +86,14 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
         children: [
           // ТМ
           Row(children: [
-            const Text('Расчётный максимум:', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+            const Text('Расчётный максимум:',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
             const SizedBox(width: 10),
             GestureDetector(
               onTap: _editTm,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
                 decoration: BoxDecoration(
                   color: AppColors.surface2,
                   border: Border.all(color: AppColors.border),
@@ -96,9 +104,11 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
                     TextSpan(text: fmtW(appState.weightFromKg(c.tm))),
                     TextSpan(
                         text: ' ${appState.weightLabel}',
-                        style: const TextStyle(fontSize: 12, color: AppColors.textDim)),
+                        style: const TextStyle(
+                            fontSize: 12, color: AppColors.textDim)),
                   ]),
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.w700),
                 ),
               ),
             ),
@@ -106,7 +116,8 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
           const SizedBox(height: 12),
           // шаг прогресса
           Row(children: [
-            const Text('Минимальный шаг прогресса:', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+            const Text('Минимальный шаг прогресса:',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
             const SizedBox(width: 10),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -119,11 +130,16 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
                 value: c.step,
                 underline: const SizedBox.shrink(),
                 dropdownColor: AppColors.surface2,
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.text),
+                style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.text),
                 items: [
                   for (final s in stepOptions)
                     DropdownMenuItem(
-                        value: s, child: Text('${fmtW(appState.weightFromKg(s))} ${appState.weightLabel}')),
+                        value: s,
+                        child: Text(
+                            '${fmtW(appState.weightFromKg(s))} ${appState.weightLabel}')),
                 ],
                 onChanged: (v) => _mutate(() => c.step = v ?? c.step),
               ),
@@ -138,11 +154,13 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
           // добавить день
           InkWell(
             borderRadius: BorderRadius.circular(14),
-            onTap: c.days.length >= 8 ? null : () => _mutate(() => c.days.add(CycleDay([
-                  CycleSet(pct: 60, reps: 5, rir: 3),
-                  CycleSet(pct: 65, reps: 5, rir: 2),
-                  CycleSet(pct: 70, reps: 5, rir: 2),
-                ]))),
+            onTap: c.days.length >= 8
+                ? null
+                : () => _mutate(() => c.days.add(CycleDay([
+                      CycleSet(pct: 60, reps: 5, rir: 3),
+                      CycleSet(pct: 65, reps: 5, rir: 2),
+                      CycleSet(pct: 70, reps: 5, rir: 2),
+                    ]))),
             child: DashedBorder(
               color: AppColors.border,
               radius: 14,
@@ -174,7 +192,8 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
               style: OutlinedButton.styleFrom(
                 foregroundColor: const Color(0xFFD06060),
                 side: const BorderSide(color: Color(0xFFA03030), width: 1.5),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
               child: const Text('Удалить цикл'),
@@ -199,13 +218,18 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            Expanded(child: Text('День ${i + 1}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800))),
+            Expanded(
+                child: Text('День ${i + 1}',
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w800))),
             GestureDetector(
               onTap: () async {
                 if (await _confirm('Удалить день ${i + 1} из цикла?')) {
                   _mutate(() {
                     c.days.removeAt(i);
-                    if (c.curDay >= c.days.length) c.curDay = c.days.isEmpty ? 0 : c.days.length - 1;
+                    if (c.curDay >= c.days.length) {
+                      c.curDay = c.days.isEmpty ? 0 : c.days.length - 1;
+                    }
                   });
                 }
               },
@@ -214,10 +238,13 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
                 height: 26,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFA03030), width: 1.5),
+                  border:
+                      Border.all(color: const Color(0xFFA03030), width: 1.5),
                 ),
                 child: const Center(
-                  child: Text('✕', style: TextStyle(fontSize: 12, color: Color(0xFFD06060), height: 1)),
+                  child: Text('✕',
+                      style: TextStyle(
+                          fontSize: 12, color: Color(0xFFD06060), height: 1)),
                 ),
               ),
             ),
@@ -244,9 +271,11 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
               style: TextButton.styleFrom(
                 foregroundColor: Theme.of(context).colorScheme.primary,
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('+ Подход', style: TextStyle(fontWeight: FontWeight.w700)),
+              child: const Text('+ Подход',
+                  style: TextStyle(fontWeight: FontWeight.w700)),
             ),
           ),
         ],

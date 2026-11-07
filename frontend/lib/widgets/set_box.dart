@@ -48,7 +48,8 @@ class SetFlow extends StatelessWidget {
 
   bool get _compact {
     if (sets.length != 5) return false;
-    return sets.every((s) => _value(s).replaceAll(RegExp(r'\D'), '').length <= 5);
+    return sets
+        .every((s) => _value(s).replaceAll(RegExp(r'\D'), '').length <= 5);
   }
 
   static String _value(SetBoxData s) {
@@ -66,7 +67,9 @@ class SetFlow extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, cons) {
       final compact = _compact;
-      final itemW = compact ? (cons.maxWidth - gap * 4) / 5 : (cons.maxWidth - gap * 3) / 4;
+      final itemW = compact
+          ? (cons.maxWidth - gap * 4) / 5
+          : (cons.maxWidth - gap * 3) / 4;
       return Wrap(
         spacing: gap,
         runSpacing: gap,
@@ -110,7 +113,8 @@ class SetBox extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 1),
                 child: Text('${data.pctApprox ? '~' : ''}${data.pct}%',
-                    style: const TextStyle(fontSize: 11, color: AppColors.textDim)),
+                    style: const TextStyle(
+                        fontSize: 11, color: AppColors.textDim)),
               ),
             const SizedBox(height: 4),
             if (data.format.usesRir) RirPill(code: data.rir),
@@ -130,13 +134,17 @@ class SetValueText extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = SetFlow._value(data);
     final digits = text.replaceAll(RegExp(r'\D'), '').length;
-    final separator = data.format == RecordFormat.timeDistance ? ' · ' : (digits >= 5 ? '×' : ' × ');
+    final separator = data.format == RecordFormat.timeDistance
+        ? ' · '
+        : (digits >= 5 ? '×' : ' × ');
     final parts = text.split('×');
     final shown = parts.length == 2 ? '${parts[0]}$separator${parts[1]}' : text;
     final style = digits >= 7 || data.format == RecordFormat.timeDistance
-        ? const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, letterSpacing: -0.8)
+        ? const TextStyle(
+            fontSize: 11.5, fontWeight: FontWeight.w600, letterSpacing: -0.8)
         : digits >= 5
-            ? const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: -0.5)
+            ? const TextStyle(
+                fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: -0.5)
             : const TextStyle(fontSize: 14, fontWeight: FontWeight.w700);
     return FittedBox(
       fit: BoxFit.scaleDown,
@@ -155,12 +163,23 @@ class RirPill extends StatelessWidget {
     return Container(
       height: 20,
       constraints: const BoxConstraints(minWidth: 40),
-      padding: const EdgeInsets.fromLTRB(9, 0, 9, 3),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
+      padding: const EdgeInsets.symmetric(horizontal: 5),
+      decoration:
+          BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
       child: Center(
-        widthFactor: 1,
-        child: Text(rirLabel(code),
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white, height: 1)),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            rirLabel(code),
+            maxLines: 1,
+            softWrap: false,
+            style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+                height: 1.15),
+          ),
+        ),
       ),
     );
   }

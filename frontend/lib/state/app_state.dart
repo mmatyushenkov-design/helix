@@ -44,7 +44,8 @@ class AppState extends ChangeNotifier {
       ));
     }
     final today = DateTime.now();
-    void mk(int daysAgo, String name, List<List<num>> sets, [String? cycleId, int? dayIdx]) {
+    void mk(int daysAgo, String name, List<List<num>> sets,
+        [String? cycleId, int? dayIdx]) {
       final exercise = exerciseByName(name);
       final k = dkey(today.subtract(Duration(days: daysAgo)));
       (log[k] ??= []).add(DiaryEntry(
@@ -67,19 +68,54 @@ class AppState extends ChangeNotifier {
       ));
     }
 
-    const benchW = [92.0, 95, 95, 97.5, 100, 100, 102.5, 105, 105, 107.5, 110, 112.5, 115, 117.5];
+    const benchW = [
+      92.0,
+      95,
+      95,
+      97.5,
+      100,
+      100,
+      102.5,
+      105,
+      105,
+      107.5,
+      110,
+      112.5,
+      115,
+      117.5
+    ];
     for (var i = 0; i < benchW.length; i++) {
-      mk(60 - i * 4, 'Жим лёжа', [[benchW[i], 5, 2], [benchW[i], 5, 2], [benchW[i], 4, 1]]);
+      mk(60 - i * 4, 'Жим лёжа', [
+        [benchW[i], 5, 2],
+        [benchW[i], 5, 2],
+        [benchW[i], 4, 1]
+      ]);
     }
     const squatW = [115.0, 120, 122.5, 125, 127.5, 130, 132.5, 135, 137.5, 140];
     for (var i = 0; i < squatW.length; i++) {
-      mk(55 - i * 5, 'Приседания', [[squatW[i], 5, 2], [squatW[i], 5, 1], [squatW[i], 4, 1]]);
+      mk(55 - i * 5, 'Приседания', [
+        [squatW[i], 5, 2],
+        [squatW[i], 5, 1],
+        [squatW[i], 4, 1]
+      ]);
     }
     const pullR = [6, 7, 7, 8, 8, 9];
     for (var i = 0; i < pullR.length; i++) {
-      mk(40 - i * 6, 'Подтягивания', [[0, pullR[i], 2], [0, pullR[i] - 1, 1]]);
+      mk(40 - i * 6, 'Подтягивания', [
+        [0, pullR[i], 2],
+        [0, pullR[i] - 1, 1]
+      ]);
     }
-    mk(0, 'Жим лёжа', [[60, 10, 5], [114, 3, 2], [114, 3, 2]], cycles[1].id, 0);
+    mk(
+        0,
+        'Жим лёжа',
+        [
+          [60, 10, 5],
+          [114, 3, 2],
+          [114, 3, 2]
+        ],
+        cycles[1].id,
+        0);
   }
 
   Exercise? exerciseById(String? id) {
@@ -102,7 +138,8 @@ class AppState extends ChangeNotifier {
 
   double weightFromKg(double kg) => kgToDisplay(kg, weightUnit);
   double weightToKg(double value) => displayToKg(value, weightUnit);
-  double distanceFromMeters(double meters) => metersToDisplay(meters, distanceUnit);
+  double distanceFromMeters(double meters) =>
+      metersToDisplay(meters, distanceUnit);
   double distanceToMeters(double value) => displayToMeters(value, distanceUnit);
   String get weightLabel => weightUnitLabel(weightUnit);
   String get distanceLabel => distanceUnitLabel(distanceUnit);
@@ -160,10 +197,12 @@ class AppState extends ChangeNotifier {
   }
 
   Cycle addCycle(String exerciseIdOrName) {
-    final exercise = exerciseById(exerciseIdOrName) ?? exerciseByName(exerciseIdOrName);
+    final exercise =
+        exerciseById(exerciseIdOrName) ?? exerciseByName(exerciseIdOrName);
     if (exercise == null) throw ArgumentError('Неизвестное упражнение');
     if (exercise.format != RecordFormat.weightReps) {
-      throw ArgumentError('Силовой цикл доступен только для формата «вес + повторения»');
+      throw ArgumentError(
+          'Силовой цикл доступен только для формата «вес + повторения»');
     }
     final c = Cycle(
       exerciseId: exercise.id,
@@ -271,15 +310,21 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool _hasLater(DiaryEntry e, Cycle c) => log.values.expand((x) => x).any(
-      (x) => !identical(x, e) && x.cycleId == c.id && x.dayIdx != null && x.dayIdx! > (e.dayIdx ?? -1));
+  bool _hasLater(DiaryEntry e, Cycle c) =>
+      log.values.expand((x) => x).any((x) =>
+          !identical(x, e) &&
+          x.cycleId == c.id &&
+          x.dayIdx != null &&
+          x.dayIdx! > (e.dayIdx ?? -1));
 
   void _bump(Cycle c, double dir) {
     c.tm += c.step * dir;
     c.wOffset += c.step * dir;
     for (final d in c.days) {
       for (final s in d.sets) {
-        if (s.w != null) s.w = ((s.w! + c.step * dir) * 100).roundToDouble() / 100;
+        if (s.w != null) {
+          s.w = ((s.w! + c.step * dir) * 100).roundToDouble() / 100;
+        }
       }
     }
   }
@@ -359,23 +404,30 @@ class AppState extends ChangeNotifier {
     }
     cycles
       ..clear()
-      ..addAll([for (final c in j['cycles'] as List? ?? const []) Cycle.fromJson(c)]);
+      ..addAll([
+        for (final c in j['cycles'] as List? ?? const []) Cycle.fromJson(c)
+      ]);
     log
       ..clear()
-      ..addAll((j['log'] as Map<String, dynamic>? ?? {}).map(
-          (k, v) => MapEntry(k, [for (final e in v as List) DiaryEntry.fromJson(e)])));
+      ..addAll((j['log'] as Map<String, dynamic>? ?? {}).map((k, v) =>
+          MapEntry(k, [for (final e in v as List) DiaryEntry.fromJson(e)])));
     templates
       ..clear()
-      ..addAll([for (final t in j['templates'] as List? ?? const []) WorkoutTemplate.fromJson(t)]);
+      ..addAll([
+        for (final t in j['templates'] as List? ?? const [])
+          WorkoutTemplate.fromJson(t)
+      ]);
 
     // Старые снапшоты не содержали каталога и формата: восстанавливаем связи.
     for (final cycle in cycles) {
-      final exercise = exerciseById(cycle.exerciseId) ?? exerciseByName(cycle.name);
+      final exercise =
+          exerciseById(cycle.exerciseId) ?? exerciseByName(cycle.name);
       if (exercise != null) cycle.exerciseId = exercise.id;
     }
     for (final entries in log.values) {
       for (final entry in entries) {
-        final exercise = exerciseById(entry.exerciseId) ?? exerciseByName(entry.name);
+        final exercise =
+            exerciseById(entry.exerciseId) ?? exerciseByName(entry.name);
         if (exercise != null) {
           entry.exerciseId = exercise.id;
           if (j['schemaVersion'] == null) entry.recordFormat = exercise.format;
@@ -384,8 +436,11 @@ class AppState extends ChangeNotifier {
     }
     accent = Color(j['accent'] as int? ?? AppColors.accentGreen.toARGB32());
     language = j['language'] as String? ?? 'ru';
-    weightUnit = WeightUnit.values.firstWhere((u) => u.name == j['weightUnit'], orElse: () => WeightUnit.kg);
-    distanceUnit = DistanceUnit.values.firstWhere((u) => u.name == j['distanceUnit'], orElse: () => DistanceUnit.km);
+    weightUnit = WeightUnit.values.firstWhere((u) => u.name == j['weightUnit'],
+        orElse: () => WeightUnit.kg);
+    distanceUnit = DistanceUnit.values.firstWhere(
+        (u) => u.name == j['distanceUnit'],
+        orElse: () => DistanceUnit.km);
   }
 }
 

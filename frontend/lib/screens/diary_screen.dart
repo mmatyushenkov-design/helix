@@ -7,19 +7,41 @@ import '../widgets/set_box.dart';
 import '../widgets/set_sheet.dart';
 import '../widgets/confirm_dialog.dart';
 import '../widgets/dashed_border.dart';
+import 'diary_exercise_picker.dart';
 
 const _dows = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const _months = [
-  'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
-  'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря',
+  'января',
+  'февраля',
+  'марта',
+  'апреля',
+  'мая',
+  'июня',
+  'июля',
+  'августа',
+  'сентября',
+  'октября',
+  'ноября',
+  'декабря',
 ];
 const _monthsNom = [
-  'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-  'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
+  'Январь',
+  'Февраль',
+  'Март',
+  'Апрель',
+  'Май',
+  'Июнь',
+  'Июль',
+  'Август',
+  'Сентябрь',
+  'Октябрь',
+  'Ноябрь',
+  'Декабрь',
 ];
 
 DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
-DateTime _monday(DateTime d) => _dateOnly(d).subtract(Duration(days: (d.weekday - 1) % 7));
+DateTime _monday(DateTime d) =>
+    _dateOnly(d).subtract(Duration(days: (d.weekday - 1) % 7));
 
 /// Вкладка «Дневник»: календарь + тренировка выбранного дня.
 class DiaryScreen extends StatefulWidget {
@@ -81,7 +103,8 @@ class _DiaryScreenState extends State<DiaryScreen> {
   }
 
   Future<void> _addSet(DiaryEntry e) async {
-    final res = await showSetSheet(context, mode: SetSheetMode.newSet, format: e.recordFormat);
+    final res = await showSetSheet(context,
+        mode: SetSheetMode.newSet, format: e.recordFormat);
     if (res?.set != null) {
       final value = res!.set!;
       e.sets.add(DiarySet(
@@ -101,7 +124,8 @@ class _DiaryScreenState extends State<DiaryScreen> {
   }
 
   void _confirmDelete(DiaryEntry e) async {
-    if (await showConfirmDialog(context, 'Вы уверены, что хотите удалить это упражнение?')) {
+    if (await showConfirmDialog(
+        context, 'Вы уверены, что хотите удалить это упражнение?')) {
       appState.deleteEntry(_selected, e);
     }
   }
@@ -117,7 +141,11 @@ class _DiaryScreenState extends State<DiaryScreen> {
             dayIdx: c.curDay,
             presetSets: [
               for (final s in c.days[c.curDay].sets)
-                DiarySet(w: setWeight(c, s), reps: s.reps, rir: s.rir, planned: true),
+                DiarySet(
+                    w: setWeight(c, s),
+                    reps: s.reps,
+                    rir: s.rir,
+                    planned: true),
             ]);
         return;
       }
@@ -154,10 +182,12 @@ class _DiaryScreenState extends State<DiaryScreen> {
                     backgroundColor: appState.accent,
                     foregroundColor: Colors.black,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                   child: const Text('Так держать!',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                      style:
+                          TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                 ),
               ),
             ],
@@ -188,7 +218,8 @@ class _DiaryScreenState extends State<DiaryScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
                 child: Text(
                   'Тренировка — ${isToday ? 'сегодня' : '${_selected.day} ${_months[_selected.month - 1]}'}',
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.w700),
                 ),
               ),
               if (entries.isEmpty)
@@ -196,7 +227,8 @@ class _DiaryScreenState extends State<DiaryScreen> {
                   padding: EdgeInsets.symmetric(vertical: 14),
                   child: Center(
                     child: Text('В этот день записей нет',
-                        style: TextStyle(fontSize: 13, color: AppColors.textDim)),
+                        style:
+                            TextStyle(fontSize: 13, color: AppColors.textDim)),
                   ),
                 )
               else
@@ -209,8 +241,9 @@ class _DiaryScreenState extends State<DiaryScreen> {
                     entries.insert(newI, entries.removeAt(oldI));
                     appState.touch();
                   },
-                  itemBuilder: (context, i) =>
-                      _buildEntryCard(entries[i], i, accent, key: ValueKey(entries[i].id)),
+                  itemBuilder: (context, i) => _buildEntryCard(
+                      entries[i], i, accent,
+                      key: ValueKey(entries[i].id)),
                 ),
               const SizedBox(height: 2),
               InkWell(
@@ -228,7 +261,8 @@ class _DiaryScreenState extends State<DiaryScreen> {
                     ),
                     child: const Center(
                       child: Text('+ Добавить упражнение',
-                          style: TextStyle(fontSize: 14, color: AppColors.textDim)),
+                          style: TextStyle(
+                              fontSize: 14, color: AppColors.textDim)),
                     ),
                   ),
                 ),
@@ -242,7 +276,29 @@ class _DiaryScreenState extends State<DiaryScreen> {
 
   /* ---------- календарь ---------- */
 
+  static const _weekHeight = 58.0;
+  static const _monthRowHeight = 44.0;
+  static const _monthHeaderHeight = 70.0;
+
   Widget _buildCalendar(Color accent) {
+    final y = _viewMonth.year, m = _viewMonth.month;
+    final lead = (DateTime(y, m, 1).weekday - 1) % 7;
+    final daysIn = DateTime(y, m + 1, 0).day;
+    final cellCount = ((lead + daysIn + 6) ~/ 7) * 7;
+    final first = DateTime(y, m, 1).subtract(Duration(days: lead));
+    final dates = [
+      for (var i = 0; i < cellCount; i++) first.add(Duration(days: i))
+    ];
+    final monday = _monday(_selected);
+    final weekIndex = dates.indexWhere((d) => _dateOnly(d) == monday);
+    final weekRow = weekIndex < 0 ? -1 : weekIndex ~/ 7;
+    final rows = cellCount ~/ 7;
+    final monthHeight = _monthHeaderHeight +
+        rows * _monthRowHeight +
+        (weekRow >= 0 ? _weekHeight - _monthRowHeight : 0);
+    final weekTop =
+        weekRow < 0 ? 0.0 : _monthHeaderHeight + weekRow * _monthRowHeight;
+
     return GestureDetector(
       onVerticalDragEnd: (d) {
         final v = d.primaryVelocity ?? 0;
@@ -250,6 +306,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
         if (v < -200 && _monthOpen) setState(() => _monthOpen = false);
       },
       child: Container(
+        key: const Key('calendar'),
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: AppColors.surface,
@@ -258,14 +315,46 @@ class _DiaryScreenState extends State<DiaryScreen> {
         ),
         child: Column(
           children: [
-            _buildWeekRow(accent),
-            AnimatedSize(
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.ease,
-              child: _monthOpen ? _buildMonth(accent) : const SizedBox(width: double.infinity),
+            ClipRect(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeInOut,
+                height: _monthOpen ? monthHeight : _weekHeight,
+                child: Stack(
+                  children: [
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      top: 0,
+                      height: monthHeight,
+                      child: IgnorePointer(
+                        ignoring: !_monthOpen,
+                        child: AnimatedOpacity(
+                          duration: const Duration(milliseconds: 180),
+                          opacity: _monthOpen ? 1 : 0,
+                          child: _buildMonth(accent, dates, weekRow),
+                        ),
+                      ),
+                    ),
+                    AnimatedPositioned(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOut,
+                      left: 0,
+                      right: 0,
+                      top: _monthOpen ? weekTop : 0,
+                      height: _weekHeight,
+                      child: AnimatedOpacity(
+                        duration: const Duration(milliseconds: 180),
+                        opacity: _monthOpen && weekRow < 0 ? 0 : 1,
+                        child: _buildWeekRow(accent),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-            // ручка: полоска с треугольником
             InkWell(
+              key: const Key('calendar-handle'),
               onTap: () => setState(() => _monthOpen = !_monthOpen),
               child: Padding(
                 padding: const EdgeInsets.only(top: 12, bottom: 4),
@@ -274,12 +363,8 @@ class _DiaryScreenState extends State<DiaryScreen> {
                     width: 44,
                     height: 6,
                     decoration: BoxDecoration(
-                        color: const Color(0xFF555555), borderRadius: BorderRadius.circular(3)),
-                    child: Center(
-                      child: CustomPaint(
-                        size: const Size(8, 5),
-                        painter: _TriPainter(up: _monthOpen),
-                      ),
+                      color: const Color(0xFF555555),
+                      borderRadius: BorderRadius.circular(3),
                     ),
                   ),
                 ),
@@ -309,14 +394,17 @@ class _DiaryScreenState extends State<DiaryScreen> {
   Widget _weekDay(DateTime d, int dow, Color accent) {
     final sel = _dateOnly(d) == _selected;
     final today = _isToday(d);
-    final has = appState.log.containsKey(dkey(d)) && appState.log[dkey(d)]!.isNotEmpty;
+    final has =
+        appState.log.containsKey(dkey(d)) && appState.log[dkey(d)]!.isNotEmpty;
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: () => _select(d),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        height: _weekHeight,
+        padding: const EdgeInsets.symmetric(vertical: 4),
         decoration: BoxDecoration(
-          color: sel ? accent : null,
+          color:
+              sel ? accent : (_monthOpen ? AppColors.accentDim(accent) : null),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: today && !sel ? accent : AppColors.border,
@@ -327,7 +415,10 @@ class _DiaryScreenState extends State<DiaryScreen> {
           children: [
             Text(_dows[dow],
                 style: TextStyle(
-                    fontSize: 11, color: sel ? Colors.black.withValues(alpha: 0.67) : AppColors.textDim)),
+                    fontSize: 11,
+                    color: sel
+                        ? Colors.black.withValues(alpha: 0.67)
+                        : AppColors.textDim)),
             const SizedBox(height: 2),
             Text('${d.day}',
                 style: TextStyle(
@@ -342,7 +433,8 @@ class _DiaryScreenState extends State<DiaryScreen> {
                       height: 5,
                       margin: const EdgeInsets.only(top: 3),
                       decoration: BoxDecoration(
-                          color: sel ? Colors.black : accent, shape: BoxShape.circle),
+                          color: sel ? Colors.black : accent,
+                          shape: BoxShape.circle),
                     )
                   : null,
             ),
@@ -352,45 +444,49 @@ class _DiaryScreenState extends State<DiaryScreen> {
     );
   }
 
-  Widget _buildMonth(Color accent) {
+  Widget _buildMonth(Color accent, List<DateTime> dates, int weekRow) {
     final y = _viewMonth.year, m = _viewMonth.month;
-    final lead = (DateTime(y, m, 1).weekday - 1) % 7;
-    final daysIn = DateTime(y, m + 1, 0).day;
-    final prevDays = DateTime(y, m, 0).day;
-    final monday = _monday(_selected);
-    final weekEnd = monday.add(const Duration(days: 7));
-
-    final cells = <Widget>[];
-    for (var i = 0; i < lead; i++) {
-      cells.add(_monthCell(DateTime(y, m - 1, prevDays - lead + 1 + i), other: true, accent: accent));
-    }
-    for (var d = 1; d <= daysIn; d++) {
-      cells.add(_monthCell(DateTime(y, m, d), monday: monday, weekEnd: weekEnd, accent: accent));
-    }
-    while (cells.length % 7 != 0) {
-      cells.add(_monthCell(DateTime(y, m + 1, cells.length - lead - daysIn + 1), other: true, accent: accent));
-    }
-
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(4, 6, 4, 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _monthNav('‹', () => setState(() => _viewMonth = DateTime(y, m - 1))),
-              Text('${_monthsNom[m - 1]} $y',
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-              _monthNav('›', () => setState(() => _viewMonth = DateTime(y, m + 1))),
-            ],
+        SizedBox(
+          height: 52,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(4, 6, 4, 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _monthNav(
+                    '‹', () => setState(() => _viewMonth = DateTime(y, m - 1))),
+                Text('${_monthsNom[m - 1]} $y',
+                    style: const TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.w700)),
+                _monthNav(
+                    '›', () => setState(() => _viewMonth = DateTime(y, m + 1))),
+              ],
+            ),
           ),
         ),
-        Row(children: [for (final d in _dows) Expanded(child: Center(child: Text(d, style: const TextStyle(fontSize: 11, color: AppColors.textDim))))]),
-        const SizedBox(height: 4),
-        for (var r = 0; r < cells.length ~/ 7; r++)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 2),
-            child: Row(children: [for (var c = 0; c < 7; c++) Expanded(child: cells[r * 7 + c])]),
+        SizedBox(
+          height: 18,
+          child: Row(children: [
+            for (final d in _dows)
+              Expanded(
+                  child: Center(
+                      child: Text(d,
+                          style: const TextStyle(
+                              fontSize: 11, color: AppColors.textDim))))
+          ]),
+        ),
+        for (var r = 0; r < dates.length ~/ 7; r++)
+          SizedBox(
+            height: r == weekRow ? _weekHeight : _monthRowHeight,
+            child: r == weekRow
+                ? null
+                : Row(children: [
+                    for (var c = 0; c < 7; c++)
+                      Expanded(
+                          child: _monthCell(dates[r * 7 + c], accent: accent))
+                  ]),
           ),
       ],
     );
@@ -403,52 +499,64 @@ class _DiaryScreenState extends State<DiaryScreen> {
       child: Container(
         width: 34,
         height: 34,
-        decoration: BoxDecoration(color: AppColors.surface2, borderRadius: BorderRadius.circular(10)),
+        decoration: BoxDecoration(
+            color: AppColors.surface2, borderRadius: BorderRadius.circular(10)),
         child: Center(child: Text(label, style: const TextStyle(fontSize: 16))),
       ),
     );
   }
 
-  Widget _monthCell(DateTime d,
-      {bool other = false, DateTime? monday, DateTime? weekEnd, required Color accent}) {
+  Widget _monthCell(DateTime d, {required Color accent}) {
     final sel = _dateOnly(d) == _selected;
     final today = _isToday(d);
-    final inWeek = !other && monday != null && !d.isBefore(monday) && d.isBefore(weekEnd!);
-    final has = appState.log.containsKey(dkey(d)) && appState.log[dkey(d)]!.isNotEmpty;
-    return InkWell(
-      borderRadius: BorderRadius.circular(10),
-      onTap: () => _select(d),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          color: sel ? accent : (inWeek && !today ? AppColors.accentDim(accent) : null),
-          borderRadius: BorderRadius.circular(10),
-          border: today && !sel ? Border.all(color: accent, width: 1.5) : null,
-        ),
-        child: Column(
-          children: [
-            Text('${d.day}',
-                style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: sel ? FontWeight.w700 : FontWeight.w400,
-                    color: sel
-                        ? Colors.black
-                        : other
-                            ? const Color(0xFF555555)
-                            : AppColors.text)),
-            SizedBox(
-              height: 7,
-              child: has
-                  ? Container(
-                      width: 5,
-                      height: 5,
-                      margin: const EdgeInsets.only(top: 2),
-                      decoration: BoxDecoration(
-                          color: sel ? Colors.black : accent, shape: BoxShape.circle),
-                    )
-                  : null,
+    final monday = _monday(_selected);
+    final inWeek = !_dateOnly(d).isBefore(monday) &&
+        _dateOnly(d).isBefore(monday.add(const Duration(days: 7)));
+    final other = d.month != _viewMonth.month;
+    final has =
+        appState.log.containsKey(dkey(d)) && appState.log[dkey(d)]!.isNotEmpty;
+    return Padding(
+      padding: const EdgeInsets.all(2),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: () => _select(d),
+        child: Container(
+          height: 40,
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          decoration: BoxDecoration(
+            color: sel ? accent : (inWeek ? AppColors.accentDim(accent) : null),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: today && !sel ? accent : AppColors.border,
+              width: today && !sel ? 1.5 : 1,
             ),
-          ],
+          ),
+          child: Column(
+            children: [
+              Text('${d.day}',
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: sel ? FontWeight.w700 : FontWeight.w400,
+                      color: sel
+                          ? Colors.black
+                          : other
+                              ? const Color(0xFF777777)
+                              : AppColors.text)),
+              SizedBox(
+                height: 7,
+                child: has
+                    ? Container(
+                        width: 5,
+                        height: 5,
+                        margin: const EdgeInsets.only(top: 2),
+                        decoration: BoxDecoration(
+                            color: sel ? Colors.black : accent,
+                            shape: BoxShape.circle),
+                      )
+                    : null,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -456,7 +564,8 @@ class _DiaryScreenState extends State<DiaryScreen> {
 
   /* ---------- карточка упражнения ---------- */
 
-  Widget _buildEntryCard(DiaryEntry e, int index, Color accent, {required Key key}) {
+  Widget _buildEntryCard(DiaryEntry e, int index, Color accent,
+      {required Key key}) {
     final c = appState.cycleById(e.cycleId);
     return Container(
       key: key,
@@ -485,11 +594,15 @@ class _DiaryScreenState extends State<DiaryScreen> {
                     ),
                     Expanded(
                       child: Text(appState.exerciseName(e.exerciseId, e.name),
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w700)),
                     ),
                     if (c != null && e.dayIdx != null)
                       Text('день ${e.dayIdx! + 1}/${c.days.length}',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: accent)),
+                          style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: accent)),
                   ],
                 ),
               ),
@@ -526,7 +639,9 @@ class _DiaryScreenState extends State<DiaryScreen> {
                           ),
                           child: const Center(
                             child: Text('Завершить',
-                                style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.text)),
+                                style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.text)),
                           ),
                         ),
                       ),
@@ -546,7 +661,9 @@ class _DiaryScreenState extends State<DiaryScreen> {
                             ),
                             child: Center(
                               child: Text('+ Подход',
-                                  style: TextStyle(fontWeight: FontWeight.w700, color: accent)),
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      color: accent)),
                             ),
                           ),
                         ),
@@ -566,7 +683,9 @@ class _DiaryScreenState extends State<DiaryScreen> {
                     onTap: () => appState.undoFinish(e),
                     child: const Padding(
                       padding: EdgeInsets.all(2),
-                      child: Text('⚙', style: TextStyle(fontSize: 17, color: Color(0xFF777777))),
+                      child: Text('⚙',
+                          style: TextStyle(
+                              fontSize: 17, color: Color(0xFF777777))),
                     ),
                   )
                 : InkWell(
@@ -577,11 +696,15 @@ class _DiaryScreenState extends State<DiaryScreen> {
                       height: 22,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: const Color(0xFFA03030), width: 1.5),
+                        border: Border.all(
+                            color: const Color(0xFFA03030), width: 1.5),
                       ),
                       child: const Center(
                         child: Text('✕',
-                            style: TextStyle(fontSize: 11, color: Color(0xFFD06060), height: 1)),
+                            style: TextStyle(
+                                fontSize: 11,
+                                color: Color(0xFFD06060),
+                                height: 1)),
                       ),
                     ),
                   ),
@@ -607,37 +730,12 @@ class _DragHandle extends StatelessWidget {
             height: 2,
             margin: const EdgeInsets.symmetric(vertical: 1.6),
             decoration: BoxDecoration(
-                color: const Color(0xFF666666), borderRadius: BorderRadius.circular(1)),
+                color: const Color(0xFF666666),
+                borderRadius: BorderRadius.circular(1)),
           ),
       ],
     );
   }
-}
-
-/// Треугольник в ручке календаря.
-class _TriPainter extends CustomPainter {
-  final bool up;
-  _TriPainter({required this.up});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()..color = const Color(0xFF999999);
-    final path = up
-        ? (Path()
-          ..moveTo(0, size.height)
-          ..lineTo(size.width / 2, 0)
-          ..lineTo(size.width, size.height)
-          ..close())
-        : (Path()
-          ..moveTo(0, 0)
-          ..lineTo(size.width / 2, size.height)
-          ..lineTo(size.width, 0)
-          ..close());
-    canvas.drawPath(path, p);
-  }
-
-  @override
-  bool shouldRepaint(_TriPainter old) => old.up != up;
 }
 
 /// Анимация поздравления: ТМ уезжает влево, появляется «+шаг», оба пульсируют ×1,5.
@@ -650,9 +748,11 @@ class _CelebrateAnim extends StatefulWidget {
   State<_CelebrateAnim> createState() => _CelebrateAnimState();
 }
 
-class _CelebrateAnimState extends State<_CelebrateAnim> with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 1500))..forward();
+class _CelebrateAnimState extends State<_CelebrateAnim>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 1500))
+    ..forward();
 
   @override
   void dispose() {
@@ -669,7 +769,10 @@ class _CelebrateAnimState extends State<_CelebrateAnim> with SingleTickerProvide
         final t = _ctrl.value;
         // 0–0,35: плюс въезжает справа; 0,35–1: общая пульсация 1 → 1,5 → 1
         final inT = (t / 0.35).clamp(0.0, 1.0);
-        final pulse = t < 0.35 ? 0.0 : Curves.easeInOut.transform(((t - 0.35) / 0.65 * 2).clamp(0.0, 2.0));
+        final pulse = t < 0.35
+            ? 0.0
+            : Curves.easeInOut
+                .transform(((t - 0.35) / 0.65 * 2).clamp(0.0, 2.0));
         final scale = 1 + 0.5 * (pulse <= 1 ? pulse : 2 - pulse);
         return Transform.scale(
           scale: scale,
@@ -682,7 +785,9 @@ class _CelebrateAnimState extends State<_CelebrateAnim> with SingleTickerProvide
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
                       color: accent,
-                      shadows: const [Shadow(color: Colors.black26, blurRadius: 2)])),
+                      shadows: const [
+                        Shadow(color: Colors.black26, blurRadius: 2)
+                      ])),
               Opacity(
                 opacity: inT,
                 child: Transform.translate(
@@ -691,7 +796,9 @@ class _CelebrateAnimState extends State<_CelebrateAnim> with SingleTickerProvide
                     padding: const EdgeInsets.only(left: 8),
                     child: Text('+${fmtW(widget.step)} кг',
                         style: const TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.w800, color: Color(0xFFFF9D45))),
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFFFF9D45))),
                   ),
                 ),
               ),
@@ -699,177 +806,6 @@ class _CelebrateAnimState extends State<_CelebrateAnim> with SingleTickerProvide
           ),
         );
       },
-    );
-  }
-}
-
-/* ================= выбор упражнения для дневника ================= */
-
-class PickedExercise {
-  final String name;
-  final bool withCycle;
-  final String? cycleId;
-  const PickedExercise(this.name, {this.withCycle = false, this.cycleId});
-}
-
-Future<PickedExercise?> showDiaryExercisePicker(BuildContext context) {
-  return showModalBottomSheet<PickedExercise>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: AppColors.surface,
-    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-    builder: (_) => const _DiaryExercisePicker(),
-  );
-}
-
-class _DiaryExercisePicker extends StatefulWidget {
-  const _DiaryExercisePicker();
-
-  @override
-  State<_DiaryExercisePicker> createState() => _DiaryExercisePickerState();
-}
-
-class _DiaryExercisePickerState extends State<_DiaryExercisePicker> {
-  String _filter = '';
-  String? _expanded;
-
-  @override
-  Widget build(BuildContext context) {
-    final language = appState.language;
-    final items = appState.exercises
-        .where((e) => !e.archived &&
-            (e.name(language).toLowerCase().contains(_filter.toLowerCase()) ||
-                e.nameRu.toLowerCase().contains(_filter.toLowerCase())))
-        .map((e) => e.name(language))
-        .toList();
-    final accent = appState.accent;
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: SizedBox(
-        height: MediaQuery.of(context).size.height * 0.7,
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            children: [
-              const Text('Добавить упражнение',
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-              const SizedBox(height: 12),
-              TextField(
-                autofocus: true,
-                style: const TextStyle(color: AppColors.text),
-                decoration: InputDecoration(
-                  hintText: 'Поиск упражнения',
-                  hintStyle: const TextStyle(color: AppColors.textDim),
-                  filled: true,
-                  fillColor: AppColors.surface2,
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.border)),
-                  enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.border)),
-                ),
-                onChanged: (v) => setState(() => _filter = v),
-              ),
-              const SizedBox(height: 10),
-              Expanded(
-                child: ListenableBuilder(
-                  listenable: appState,
-                  builder: (context, _) => ListView.builder(
-                    itemCount: items.length,
-                    itemBuilder: (context, i) {
-                      final name = items[i];
-                      final exercise = appState.exerciseByName(name);
-                      Cycle? found;
-                      for (final c in appState.cycles) {
-                        if (c.exerciseId == exercise?.id) found = c;
-                      }
-                      final cyc = found;
-                      final open = _expanded == name;
-                      return Container(
-                        decoration: const BoxDecoration(
-                            border: Border(bottom: BorderSide(color: AppColors.border))),
-                        child: Column(
-                          children: [
-                            InkWell(
-                              onTap: () {
-                                if (cyc == null) {
-                                  Navigator.pop(context, PickedExercise(name));
-                                } else {
-                                  setState(() => _expanded = open ? null : name);
-                                }
-                              },
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
-                                child: Row(
-                                  children: [
-                                    Expanded(child: Text(name, style: const TextStyle(fontSize: 15))),
-                                    Text(
-                                      cyc != null
-                                          ? 'цикл · день ${cyc.curDay + 1}/${cyc.days.length}'
-                                          : exercise?.format.label(language) ?? 'силовое',
-                                      style: TextStyle(
-                                          fontSize: 12,
-                                          color: cyc != null ? accent : AppColors.textDim),
-                                    ),
-                                    const Text(' ›', style: TextStyle(color: AppColors.textDim)),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            AnimatedSize(
-                              duration: const Duration(milliseconds: 200),
-                              child: open && cyc != null
-                                  ? Padding(
-                                      padding: const EdgeInsets.only(bottom: 12),
-                                      child: Row(
-                                        children: [
-                                          Expanded(
-                                            child: OutlinedButton(
-                                              onPressed: () =>
-                                                  Navigator.pop(context, PickedExercise(name)),
-                                              style: OutlinedButton.styleFrom(
-                                                foregroundColor: AppColors.text,
-                                                side: const BorderSide(color: AppColors.border),
-                                                shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(12)),
-                                              ),
-                                              child: const Text('Без цикла'),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 10),
-                                          Expanded(
-                                            child: FilledButton(
-                                              onPressed: () => Navigator.pop(
-                                                  context,
-                                                  PickedExercise(name,
-                                                      withCycle: true, cycleId: cyc.id)),
-                                              style: FilledButton.styleFrom(
-                                                backgroundColor: accent,
-                                                foregroundColor: Colors.black,
-                                                shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(12)),
-                                              ),
-                                              child: Text('Цикл · день ${cyc.curDay + 1}/${cyc.days.length}',
-                                                  style: const TextStyle(fontWeight: FontWeight.w700)),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    )
-                                  : const SizedBox(width: double.infinity),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

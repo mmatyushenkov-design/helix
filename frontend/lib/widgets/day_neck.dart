@@ -29,7 +29,11 @@ class NeckPainter extends CustomPainter {
     } else {
       path
         ..lineTo(left, bottom - r)
-        ..arcTo(Rect.fromCircle(center: Offset(left - r, bottom - r), radius: r), 0, math.pi / 2, false);
+        ..arcTo(
+            Rect.fromCircle(center: Offset(left - r, bottom - r), radius: r),
+            0,
+            math.pi / 2,
+            false);
     }
     // дуга закончилась в (left - r, bottom) — идём по верхней кромке панели
     if (edgeR) {
@@ -37,7 +41,11 @@ class NeckPainter extends CustomPainter {
     } else {
       path
         ..lineTo(right + r, bottom)
-        ..arcTo(Rect.fromCircle(center: Offset(right + r, bottom - r), radius: r), math.pi / 2, math.pi / 2, false);
+        ..arcTo(
+            Rect.fromCircle(center: Offset(right + r, bottom - r), radius: r),
+            math.pi / 2,
+            math.pi / 2,
+            false);
     }
     path
       ..lineTo(right, 0)
@@ -47,5 +55,6 @@ class NeckPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(NeckPainter old) => old.color != color || old.edgeL != edgeL || old.edgeR != edgeR;
+  bool shouldRepaint(NeckPainter old) =>
+      old.color != color || old.edgeL != edgeL || old.edgeR != edgeR;
 }

@@ -65,8 +65,11 @@ class RirSlider extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: scaleColors[index],
-                    border: Border.all(color: const Color(0xFF111111), width: 3),
-                    boxShadow: const [BoxShadow(color: Colors.black54, blurRadius: 10)],
+                    border:
+                        Border.all(color: const Color(0xFF111111), width: 3),
+                    boxShadow: const [
+                      BoxShadow(color: Colors.black54, blurRadius: 10)
+                    ],
                   ),
                 ),
               ),

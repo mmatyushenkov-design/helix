@@ -9,7 +9,8 @@ import 'file_storage_io.dart';
 
 /// Локальные ZIP-backup и CSV. Облако не используется.
 class LocalBackupService {
-  LocalBackupService({LocalFileStorage? storage}) : storage = storage ?? LocalFileStorage();
+  LocalBackupService({LocalFileStorage? storage})
+      : storage = storage ?? LocalFileStorage();
   final LocalFileStorage storage;
 
   Future<String> createBackup(Map<String, dynamic> snapshot) async {
@@ -29,13 +30,15 @@ class LocalBackupService {
       for (final entity in media.listSync(recursive: true)) {
         if (entity is! File) continue;
         final bytes = await entity.readAsBytes();
-        final relative = p.relative(entity.path, from: rootDir.path).replaceAll('\\', '/');
+        final relative =
+            p.relative(entity.path, from: rootDir.path).replaceAll('\\', '/');
         archive.addFile(ArchiveFile(relative, bytes.length, bytes));
       }
     }
     final zip = ZipEncoder().encode(archive);
     final stamp = DateTime.now().toUtc().toIso8601String().replaceAll(':', '-');
-    final file = await storage.writeBytes('backups/workout-backup-$stamp.zip', zip);
+    final file =
+        await storage.writeBytes('backups/workout-backup-$stamp.zip', zip);
     return file.path;
   }
 
@@ -44,9 +47,14 @@ class LocalBackupService {
     final archive = ZipDecoder().decodeBytes(bytes);
     final manifestFile = archive.findFile('manifest.json');
     final dataFile = archive.findFile('data.json');
-    if (manifestFile == null || dataFile == null) throw const FormatException('В ZIP нет manifest.json или data.json');
-    final manifest = jsonDecode(utf8.decode(manifestFile.content as List<int>)) as Map<String, dynamic>;
-    if (manifest['backup_version'] != 1) throw const FormatException('Неподдерживаемая версия backup');
+    if (manifestFile == null || dataFile == null) {
+      throw const FormatException('В ZIP нет manifest.json или data.json');
+    }
+    final manifest = jsonDecode(utf8.decode(manifestFile.content as List<int>))
+        as Map<String, dynamic>;
+    if (manifest['backup_version'] != 1) {
+      throw const FormatException('Неподдерживаемая версия backup');
+    }
     final dataBytes = dataFile.content as List<int>;
     if (sha256.convert(dataBytes).toString() != manifest['sha256']) {
       throw const FormatException('Контрольная сумма backup не совпадает');
@@ -71,7 +79,8 @@ class LocalBackupService {
   }
 
   Future<String> exportCsv(Map<String, dynamic> snapshot) async {
-    String escape(Object? value) => '"${(value ?? '').toString().replaceAll('"', '""')}"';
+    String escape(Object? value) =>
+        '"${(value ?? '').toString().replaceAll('"', '""')}"';
     final rows = <String>[
       'date,exercise,format,weight_kg,reps,duration_sec,distance_m,rir,planned',
     ];
@@ -94,7 +103,8 @@ class LocalBackupService {
       }
     }
     final stamp = DateTime.now().toUtc().toIso8601String().replaceAll(':', '-');
-    final file = await storage.writeBytes('exports/workout-export-$stamp.csv', utf8.encode(rows.join('\n')));
+    final file = await storage.writeBytes(
+        'exports/workout-export-$stamp.csv', utf8.encode(rows.join('\n')));
     return file.path;
   }
 }

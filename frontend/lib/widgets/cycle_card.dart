@@ -17,7 +17,8 @@ class CycleCard extends StatefulWidget {
   State<CycleCard> createState() => _CycleCardState();
 }
 
-class _CycleCardState extends State<CycleCard> with SingleTickerProviderStateMixin {
+class _CycleCardState extends State<CycleCard>
+    with SingleTickerProviderStateMixin {
   static const double chipH = 34;
   static const double chipGap = 6;
   static const double panelGap = 12; // зазор между рядом чипов и панелью
@@ -27,8 +28,8 @@ class _CycleCardState extends State<CycleCard> with SingleTickerProviderStateMix
   late int _lastCurDay = widget.cycle.curDay;
 
   /// Двухфазная анимация смены дня: 0–0,5 старые подходы уезжают, 0,5–1 новые выезжают.
-  late final AnimationController _swap =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
+  late final AnimationController _swap = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 200));
 
   @override
   void dispose() {
@@ -46,7 +47,8 @@ class _CycleCardState extends State<CycleCard> with SingleTickerProviderStateMix
   }
 
   void _openEditor(BuildContext context) {
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => CycleEditScreen(cycle: widget.cycle)));
+    Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => CycleEditScreen(cycle: widget.cycle)));
   }
 
   @override
@@ -83,7 +85,8 @@ class _CycleCardState extends State<CycleCard> with SingleTickerProviderStateMix
                   spacing: 6,
                   children: [
                     Text(appState.exerciseName(c.exerciseId, c.name),
-                        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+                        style: const TextStyle(
+                            fontSize: 17, fontWeight: FontWeight.w700)),
                     GestureDetector(
                       onTap: () => _openEditor(context),
                       child: FlameLabel(
@@ -94,10 +97,15 @@ class _CycleCardState extends State<CycleCard> with SingleTickerProviderStateMix
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: accentDim, borderRadius: BorderRadius.circular(20)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                    color: accentDim, borderRadius: BorderRadius.circular(20)),
                 child: Text('День ${c.curDay + 1} / $n',
-                    style: TextStyle(fontSize: 12, color: accent, fontWeight: FontWeight.w600)),
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: accent,
+                        fontWeight: FontWeight.w600)),
               ),
             ],
           ),
@@ -129,18 +137,22 @@ class _CycleCardState extends State<CycleCard> with SingleTickerProviderStateMix
                   final out = t < 0.5; // фаза уезжания / выезжания
                   final p = out ? t * 2 : (t - 0.5) * 2;
                   final dayIdx = out ? _prev : _sel;
-                  final toBigger = _sel > _prev; // новые прилетают слева, старые уезжают вправо
+                  final toBigger = _sel >
+                      _prev; // новые прилетают слева, старые уезжают вправо
                   // максимальный сдвиг — 1/5 ширины плашки подхода
                   final tileW = (w - 20 - 8 * 3) / 4;
                   final maxDx = tileW / 5;
-                  final dx = out ? (toBigger ? maxDx : -maxDx) * p : (toBigger ? -maxDx : maxDx) * (1 - p);
+                  final dx = out
+                      ? (toBigger ? maxDx : -maxDx) * p
+                      : (toBigger ? -maxDx : maxDx) * (1 - p);
                   return Opacity(
                     opacity: (out ? 1 - p : p).clamp(0.0, 1.0),
                     child: Transform.translate(
                       offset: Offset(dx, 0),
                       child: SetFlow(sets: [
                         for (final s in c.days[dayIdx].sets)
-                          SetBoxData(w: setWeight(c, s), reps: s.reps, rir: s.rir),
+                          SetBoxData(
+                              w: setWeight(c, s), reps: s.reps, rir: s.rir),
                       ]),
                     ),
                   );
@@ -166,7 +178,8 @@ class _CycleCardState extends State<CycleCard> with SingleTickerProviderStateMix
                   height: chipH / 2 + panelGap,
                   child: IgnorePointer(
                     child: CustomPaint(
-                      painter: NeckPainter(color: accentDim, edgeL: isFirst, edgeR: isLast),
+                      painter: NeckPainter(
+                          color: accentDim, edgeL: isFirst, edgeR: isLast),
                     ),
                   ),
                 ),
@@ -180,7 +193,9 @@ class _CycleCardState extends State<CycleCard> with SingleTickerProviderStateMix
                   height: chipH,
                   child: IgnorePointer(
                     child: DecoratedBox(
-                      decoration: BoxDecoration(color: accent, borderRadius: BorderRadius.circular(10)),
+                      decoration: BoxDecoration(
+                          color: accent,
+                          borderRadius: BorderRadius.circular(10)),
                     ),
                   ),
                 ),
@@ -211,7 +226,8 @@ class _CycleCardState extends State<CycleCard> with SingleTickerProviderStateMix
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.text,
                     side: const BorderSide(color: AppColors.border),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                   child: const Text('Изменить', style: TextStyle(fontSize: 13)),
                 ),
@@ -226,9 +242,12 @@ class _CycleCardState extends State<CycleCard> with SingleTickerProviderStateMix
                   style: FilledButton.styleFrom(
                     backgroundColor: accent,
                     foregroundColor: Colors.black,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                child: const Text('Начать', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Начать',
+                      style:
+                          TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
                 ),
               ),
             ),
@@ -240,7 +259,8 @@ class _CycleCardState extends State<CycleCard> with SingleTickerProviderStateMix
 
   Widget _chip(Cycle c, int i, Color accent) {
     final sel = i == _sel;
-    final missed = i < c.curDay; // пока без дневника: прошедшие дни — пропущенные
+    final missed =
+        i < c.curDay; // пока без дневника: прошедшие дни — пропущенные
     final next = i == c.curDay && !sel;
     return GestureDetector(
       onTap: () => _select(i),
@@ -248,7 +268,10 @@ class _CycleCardState extends State<CycleCard> with SingleTickerProviderStateMix
         alignment: Alignment.center,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: sel ? Colors.transparent : (next ? accent : AppColors.border)),
+          border: Border.all(
+              color: sel
+                  ? Colors.transparent
+                  : (next ? accent : AppColors.border)),
         ),
         child: Text(
           dayChipLabel(c, i),
@@ -256,7 +279,11 @@ class _CycleCardState extends State<CycleCard> with SingleTickerProviderStateMix
           style: TextStyle(
             fontSize: 12,
             fontWeight: sel ? FontWeight.w700 : FontWeight.w400,
-            color: sel ? Colors.black : (next ? accent : (missed ? const Color(0xFF666666) : AppColors.textDim)),
+            color: sel
+                ? Colors.black
+                : (next
+                    ? accent
+                    : (missed ? const Color(0xFF666666) : AppColors.textDim)),
             decoration: missed && !sel ? TextDecoration.lineThrough : null,
           ),
         ),
@@ -274,9 +301,11 @@ class FlameLabel extends StatefulWidget {
   State<FlameLabel> createState() => _FlameLabelState();
 }
 
-class _FlameLabelState extends State<FlameLabel> with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 500))..repeat(reverse: true);
+class _FlameLabelState extends State<FlameLabel>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 500))
+    ..repeat(reverse: true);
 
   @override
   void dispose() {
@@ -293,7 +322,8 @@ class _FlameLabelState extends State<FlameLabel> with SingleTickerProviderStateM
           animation: _ctrl,
           builder: (context, child) => Transform.scale(
             scale: 1 + 0.18 * _ctrl.value,
-            child: Transform.rotate(angle: -0.05 + 0.1 * _ctrl.value, child: child),
+            child: Transform.rotate(
+                angle: -0.05 + 0.1 * _ctrl.value, child: child),
           ),
           child: const Text('🔥', style: TextStyle(fontSize: 16)),
         ),
@@ -305,7 +335,10 @@ class _FlameLabelState extends State<FlameLabel> with SingleTickerProviderStateM
             end: Alignment.bottomRight,
           ).createShader(r),
           child: Text(widget.text,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
+              style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white)),
         ),
       ],
     );

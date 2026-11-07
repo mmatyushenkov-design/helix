@@ -38,7 +38,8 @@ class AppTheme {
         foregroundColor: AppColors.text,
         elevation: 0,
         centerTitle: false,
-        titleTextStyle: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: AppColors.text),
+        titleTextStyle: TextStyle(
+            fontSize: 24, fontWeight: FontWeight.w800, color: AppColors.text),
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: AppColors.surface,

@@ -18,7 +18,9 @@ Future<bool> showConfirmDialog(BuildContext context, String text) async {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(text, textAlign: TextAlign.center, style: const TextStyle(fontSize: 15)),
+            Text(text,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 15)),
             const SizedBox(height: 18),
             Row(
               children: [
@@ -54,7 +56,11 @@ class _ConfirmBtn extends StatelessWidget {
   final Color color;
   final Color borderColor;
   final VoidCallback onTap;
-  const _ConfirmBtn({required this.label, required this.color, required this.borderColor, required this.onTap});
+  const _ConfirmBtn(
+      {required this.label,
+      required this.color,
+      required this.borderColor,
+      required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -69,7 +75,9 @@ class _ConfirmBtn extends StatelessWidget {
           border: Border.all(color: borderColor, width: 1.5),
         ),
         child: Center(
-          child: Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: color)),
+          child: Text(label,
+              style: TextStyle(
+                  fontSize: 14, fontWeight: FontWeight.w700, color: color)),
         ),
       ),
     );
