@@ -223,7 +223,9 @@ class _SetSheetState extends State<_SetSheet> {
     return GestureDetector(
       onTap: () => setState(() => _target = f),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        height: 58,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
           color: AppColors.surface2,
           borderRadius: BorderRadius.circular(12),
@@ -233,20 +235,34 @@ class _SetSheetState extends State<_SetSheet> {
                   : AppColors.border,
               width: active ? 1.5 : 1),
         ),
-        child: Text.rich(
-          TextSpan(children: [
-            if (approx) const TextSpan(text: '~'),
-            TextSpan(text: _buf(f).isEmpty ? '0' : _buf(f)),
-            TextSpan(
-                text: unit,
-                style: const TextStyle(fontSize: 12, color: AppColors.textDim)),
-          ]),
-          style: const TextStyle(
-              fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.text),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text.rich(
+            TextSpan(children: [
+              if (approx) const TextSpan(text: '~'),
+              TextSpan(text: _buf(f).isEmpty ? '0' : _buf(f)),
+              TextSpan(
+                  text: unit,
+                  style:
+                      const TextStyle(fontSize: 13, color: AppColors.textDim)),
+            ]),
+            style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: AppColors.text),
+          ),
         ),
       ),
     );
   }
+
+  Widget _separator(String value) => SizedBox(
+        width: 26,
+        child: Center(
+          child: Text(value,
+              style: const TextStyle(fontSize: 18, color: AppColors.textDim)),
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -270,35 +286,28 @@ class _SetSheetState extends State<_SetSheet> {
                     const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 14),
-              Wrap(
-                alignment: WrapAlignment.center,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 8,
-                runSpacing: 8,
+              Row(
                 children: [
-                  if (format.usesWeight)
-                    _field(_Field.weight, ' ${appState.weightLabel}'),
-                  if (format.usesWeight)
-                    const Text('×',
-                        style:
-                            TextStyle(fontSize: 18, color: AppColors.textDim)),
-                  if (format.usesTime) _field(_Field.duration, ' с'),
-                  if (format.usesTime && format.usesReps)
-                    const Text('×',
-                        style:
-                            TextStyle(fontSize: 18, color: AppColors.textDim)),
-                  if (format.usesReps) _field(_Field.reps, ''),
+                  if (format.usesWeight) ...[
+                    Expanded(
+                        child:
+                            _field(_Field.weight, ' ${appState.weightLabel}')),
+                    _separator('×'),
+                  ],
+                  if (format.usesTime) ...[
+                    Expanded(child: _field(_Field.duration, ' с')),
+                    if (format.usesReps) _separator('×'),
+                  ],
+                  if (format.usesReps) Expanded(child: _field(_Field.reps, '')),
                   if (format.usesDistance) ...[
-                    const Text('·',
-                        style:
-                            TextStyle(fontSize: 18, color: AppColors.textDim)),
-                    _field(_Field.distance, ' ${appState.distanceLabel}'),
+                    _separator('·'),
+                    Expanded(
+                        child: _field(
+                            _Field.distance, ' ${appState.distanceLabel}')),
                   ],
                   if (_isCycle) ...[
-                    const Text('·',
-                        style:
-                            TextStyle(fontSize: 18, color: AppColors.textDim)),
-                    _field(_Field.pct, ' %'),
+                    _separator('·'),
+                    Expanded(child: _field(_Field.pct, ' %')),
                   ],
                 ],
               ),
@@ -344,7 +353,10 @@ class _SetSheetState extends State<_SetSheet> {
                 child: keypadOpen
                     ? Padding(
                         padding: const EdgeInsets.only(top: 14),
-                        child: NumKeypad(onKey: _pressKey),
+                        child: FractionallySizedBox(
+                          widthFactor: 0.7,
+                          child: NumKeypad(onKey: _pressKey),
+                        ),
                       )
                     : const SizedBox.shrink(),
               ),

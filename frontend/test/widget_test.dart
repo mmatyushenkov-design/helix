@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:workout_tracker_frontend/main.dart';
 import 'package:workout_tracker_frontend/models/models.dart';
+import 'package:workout_tracker_frontend/screens/stats_screen.dart';
 import 'package:workout_tracker_frontend/state/app_state.dart';
 import 'package:workout_tracker_frontend/widgets/set_box.dart';
 import 'package:workout_tracker_frontend/widgets/set_sheet.dart';
@@ -101,8 +102,9 @@ void main() {
 
     await tester.tap(find.byKey(const Key('create-exercise')));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).at(0), 'Велосипед');
-    await tester.enterText(find.byType(TextField).at(1), 'Cycling');
+    expect(find.text('Новое упражнение'), findsOneWidget);
+    await tester.enterText(find.byKey(const Key('exercise-name')), 'Велосипед');
+    await tester.tap(find.byKey(const Key('exercise-favorite')));
     await tester.tap(find.byType(DropdownButton<RecordFormat>));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Время + дистанция').last);
@@ -112,9 +114,10 @@ void main() {
 
     final exercise = appState.exerciseByName('Велосипед');
     expect(exercise, isNotNull);
-    expect(exercise!.nameEn, 'Cycling');
+    expect(exercise!.nameEn, 'Велосипед');
     expect(exercise.format, RecordFormat.timeDistance);
     expect(exercise.isCustom, isTrue);
+    expect(exercise.favorite, isTrue);
     expect(find.byKey(const Key('exercise-search')), findsOneWidget);
   });
 
@@ -200,5 +203,41 @@ void main() {
       expect(set.durationSec, format.usesTime ? 60 : 0);
       expect(set.distanceM, format.usesDistance ? 5000.0 : 0);
     }
+  });
+
+  testWidgets('Упражнение перетаскивается долгим нажатием', (tester) async {
+    await tester.pumpWidget(const WorkoutTrackerApp());
+    await tester.tap(find.text('Дневник'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('+ Добавить упражнение'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('muscle-group-chest')));
+    await tester.pumpAndSettle();
+
+    final exercise = appState.exerciseByName('Жим лёжа')!;
+    final oldIndex = appState.exercises.indexOf(exercise);
+    final gesture =
+        await tester.startGesture(tester.getCenter(find.text('Жим лёжа').last));
+    await tester.pump(const Duration(milliseconds: 700));
+    await gesture.moveBy(const Offset(0, 180));
+    await tester.pump(const Duration(milliseconds: 300));
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    expect(appState.exercises.indexOf(exercise), isNot(oldIndex));
+  });
+
+  testWidgets('Карточки статистики не переполняются на экране телефона',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 780);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final exercise = appState.exerciseByName('Приседания')!;
+    await tester.pumpWidget(MaterialApp(
+      home: StatsDetailScreen(exerciseId: exercise.id, name: exercise.nameRu),
+    ));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.text('за всё время'), findsWidgets);
   });
 }

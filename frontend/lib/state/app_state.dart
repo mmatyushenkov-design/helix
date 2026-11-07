@@ -188,6 +188,14 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void moveExercise(Exercise exercise, Exercise target, bool after) {
+    exercises.removeWhere((e) => e.id == exercise.id);
+    var index = exercises.indexWhere((e) => e.id == target.id);
+    if (index < 0) index = exercises.length;
+    exercises.insert(after ? index + 1 : index, exercise);
+    notifyListeners();
+  }
+
   Cycle? cycleById(String? id) {
     if (id == null) return null;
     for (final c in cycles) {
@@ -390,17 +398,12 @@ class AppState extends ChangeNotifier {
       };
 
   void loadJson(Map<String, dynamic> j) {
-    exercises
-      ..clear()
-      ..addAll(defaultExercises());
+    exercises.clear();
     for (final raw in j['exercises'] as List? ?? const []) {
-      final exercise = Exercise.fromJson(Map<String, dynamic>.from(raw as Map));
-      final index = exercises.indexWhere((e) => e.id == exercise.id);
-      if (index < 0) {
-        exercises.add(exercise);
-      } else {
-        exercises[index] = exercise;
-      }
+      exercises.add(Exercise.fromJson(Map<String, dynamic>.from(raw as Map)));
+    }
+    for (final exercise in defaultExercises()) {
+      if (!exercises.any((e) => e.id == exercise.id)) exercises.add(exercise);
     }
     cycles
       ..clear()

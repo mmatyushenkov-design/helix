@@ -30,7 +30,7 @@ class NumKeypad extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: 8,
       crossAxisSpacing: 8,
-      childAspectRatio: 1.4,
+      childAspectRatio: 1.3,
       children: [
         for (final k in keys)
           Material(
@@ -42,7 +42,7 @@ class NumKeypad extends StatelessWidget {
               child: Center(
                 child: Text(k,
                     style: const TextStyle(
-                        fontSize: 18,
+                        fontSize: 22,
                         fontWeight: FontWeight.w700,
                         color: AppColors.text)),
               ),

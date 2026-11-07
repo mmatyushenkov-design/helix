@@ -43,22 +43,23 @@ class _DiaryExercisePickerState extends State<_DiaryExercisePicker> {
         .any(codes.contains);
   }
 
-  String _recency(MuscleGroup group) {
-    final ids = appState.exercises
-        .where((e) => _inGroup(e, group))
-        .map((e) => e.id)
-        .toSet();
+  int? _daysAgo(Set<String> exerciseIds) {
     DateTime? last;
     for (final item in appState.log.entries) {
-      if (!item.value.any((entry) => ids.contains(entry.exerciseId))) continue;
+      if (!item.value.any((entry) => exerciseIds.contains(entry.exerciseId))) {
+        continue;
+      }
       final date = DateTime.tryParse(item.key);
       if (date != null && (last == null || date.isAfter(last))) last = date;
     }
-    if (last == null) return 'ещё не тренировали';
+    if (last == null) return null;
     final today = DateTime.now();
-    final days = DateTime(today.year, today.month, today.day)
+    return DateTime(today.year, today.month, today.day)
         .difference(DateTime(last.year, last.month, last.day))
         .inDays;
+  }
+
+  String _daysLabel(int days) {
     if (days <= 0) return 'сегодня';
     if (days == 1) return 'вчера';
     final mod100 = days % 100;
@@ -73,22 +74,19 @@ class _DiaryExercisePickerState extends State<_DiaryExercisePicker> {
     return '$days $word назад';
   }
 
-  String _exerciseCount(int count) {
-    final mod100 = count % 100;
-    final mod10 = count % 10;
-    final word = mod100 >= 11 && mod100 <= 14
-        ? 'упражнений'
-        : mod10 == 1
-            ? 'упражнение'
-            : mod10 >= 2 && mod10 <= 4
-                ? 'упражнения'
-                : 'упражнений';
-    return '$count $word';
+  String _recency(MuscleGroup group) {
+    final ids = appState.exercises
+        .where((e) => _inGroup(e, group))
+        .map((e) => e.id)
+        .toSet();
+    final days = _daysAgo(ids);
+    return days == null ? 'ещё не тренировали' : _daysLabel(days);
   }
 
-  Future<void> _createExercise() async {
-    await Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => const ExerciseEditScreen()));
+  Future<void> _editExercise([Exercise? exercise]) async {
+    await showExerciseEditDialog(context,
+        exercise: exercise, initialGroup: _groupCode);
+    if (mounted) setState(() {});
   }
 
   @override
@@ -185,7 +183,7 @@ class _DiaryExercisePickerState extends State<_DiaryExercisePicker> {
                     height: 48,
                     child: IconButton(
                       key: const Key('create-exercise'),
-                      onPressed: _createExercise,
+                      onPressed: _editExercise,
                       tooltip: 'Создать упражнение',
                       icon: const Icon(Icons.add, size: 24),
                       color: AppColors.text,
@@ -204,22 +202,29 @@ class _DiaryExercisePickerState extends State<_DiaryExercisePicker> {
                 child: ListenableBuilder(
                   listenable: appState,
                   builder: (context, _) {
-                    if (query.isEmpty && group == null) {
-                      return _buildGroups(language);
-                    }
-                    if (items.isEmpty) {
-                      return const Center(
-                        child: Text('Упражнения не найдены',
-                            style: TextStyle(
-                                color: AppColors.textDim, fontSize: 14)),
-                      );
-                    }
-                    return ListView.builder(
-                      keyboardDismissBehavior:
-                          ScrollViewKeyboardDismissBehavior.onDrag,
-                      itemCount: items.length,
-                      itemBuilder: (context, i) =>
-                          _exerciseTile(items[i], language, accent),
+                    final showGroups = query.isEmpty && group == null;
+                    return AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      switchInCurve: Curves.easeOut,
+                      switchOutCurve: Curves.easeIn,
+                      transitionBuilder: (child, animation) {
+                        final enteringList =
+                            child.key == const ValueKey('exercises');
+                        return SlideTransition(
+                          position: Tween(
+                            begin: Offset(enteringList ? 1 : -1, 0),
+                            end: Offset.zero,
+                          ).animate(animation),
+                          child: child,
+                        );
+                      },
+                      child: KeyedSubtree(
+                        key: ValueKey(showGroups ? 'groups' : 'exercises'),
+                        child: showGroups
+                            ? _buildGroups(language)
+                            : _buildExercises(
+                                items, language, accent, query.isEmpty),
+                      ),
                     );
                   },
                 ),
@@ -237,9 +242,6 @@ class _DiaryExercisePickerState extends State<_DiaryExercisePicker> {
       separatorBuilder: (_, __) => const SizedBox(height: 9),
       itemBuilder: (context, i) {
         final group = muscleCatalog[i];
-        final count = appState.exercises
-            .where((e) => !e.archived && _inGroup(e, group))
-            .length;
         return Material(
           color: AppColors.surface2,
           borderRadius: BorderRadius.circular(15),
@@ -270,7 +272,7 @@ class _DiaryExercisePickerState extends State<_DiaryExercisePicker> {
                             style: const TextStyle(
                                 fontSize: 16, fontWeight: FontWeight.w700)),
                         const SizedBox(height: 5),
-                        Text('${_exerciseCount(count)} · ${_recency(group)}',
+                        Text(_recency(group),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -288,12 +290,52 @@ class _DiaryExercisePickerState extends State<_DiaryExercisePicker> {
     );
   }
 
+  Widget _buildExercises(
+      List<Exercise> items, String language, Color accent, bool canReorder) {
+    if (items.isEmpty) {
+      return const Center(
+        child: Text('Упражнения не найдены',
+            style: TextStyle(color: AppColors.textDim, fontSize: 14)),
+      );
+    }
+    if (!canReorder) {
+      return ListView.builder(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        itemCount: items.length,
+        itemBuilder: (context, i) => _exerciseTile(items[i], language, accent),
+      );
+    }
+    return ReorderableListView.builder(
+      buildDefaultDragHandles: false,
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      itemCount: items.length,
+      onReorderItem: (oldIndex, newIndex) {
+        final after = oldIndex < newIndex;
+        final exercise = items[oldIndex];
+        final target = items[newIndex];
+        appState.moveExercise(exercise, target, after);
+        setState(() {});
+      },
+      itemBuilder: (context, i) => ReorderableDelayedDragStartListener(
+        key: ValueKey(items[i].id),
+        index: i,
+        child: _exerciseTile(items[i], language, accent),
+      ),
+    );
+  }
+
   Widget _exerciseTile(Exercise exercise, String language, Color accent) {
     final name = exercise.name(language);
     Cycle? cycle;
     for (final c in appState.cycles) {
       if (c.exerciseId == exercise.id) cycle = c;
     }
+    final days = _daysAgo({exercise.id});
+    final subtitle = cycle != null
+        ? 'цикл · день ${cycle.curDay + 1}/${cycle.days.length}'
+        : days != null && days <= 30
+            ? _daysLabel(days)
+            : '';
     final open = _expanded == exercise.id;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
@@ -304,89 +346,113 @@ class _DiaryExercisePickerState extends State<_DiaryExercisePicker> {
             color: open ? accent.withValues(alpha: 0.55) : AppColors.border),
         borderRadius: BorderRadius.circular(13),
       ),
-      child: Column(
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          InkWell(
-            borderRadius: BorderRadius.circular(13),
-            onTap: () {
-              if (cycle == null) {
-                Navigator.pop(context, PickedExercise(name));
-              } else {
-                setState(() => _expanded = open ? null : exercise.id);
-              }
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 13),
-              child: Row(
-                children: [
-                  Expanded(
-                      child: Text(name,
-                          style: const TextStyle(
-                              fontSize: 14.5, fontWeight: FontWeight.w600))),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      cycle != null
-                          ? 'цикл · день ${cycle.curDay + 1}/${cycle.days.length}'
-                          : exercise.format.label(language),
-                      textAlign: TextAlign.end,
-                      style: TextStyle(
-                          fontSize: 11,
-                          color: cycle != null ? accent : AppColors.textDim),
-                    ),
+          Column(
+            children: [
+              InkWell(
+                borderRadius: BorderRadius.circular(13),
+                onTap: () {
+                  if (cycle == null) {
+                    Navigator.pop(context, PickedExercise(name));
+                  } else {
+                    setState(() => _expanded = open ? null : exercise.id);
+                  }
+                },
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+                  child: Row(
+                    children: [
+                      Expanded(
+                          child: Text(name,
+                              style: const TextStyle(
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.w600))),
+                      const SizedBox(width: 8),
+                      if (subtitle.isNotEmpty)
+                        Text(
+                          subtitle,
+                          maxLines: 1,
+                          softWrap: false,
+                          textAlign: TextAlign.end,
+                          style: TextStyle(
+                              fontSize: 11,
+                              color:
+                                  cycle != null ? accent : AppColors.textDim),
+                        ),
+                      SizedBox(
+                        width: 34,
+                        height: 30,
+                        child: IconButton(
+                          key: Key('edit-exercise-${exercise.id}'),
+                          padding: EdgeInsets.zero,
+                          onPressed: () => _editExercise(exercise),
+                          tooltip: 'Изменить упражнение',
+                          icon: const Icon(Icons.more_horiz,
+                              size: 21, color: AppColors.textDim),
+                        ),
+                      ),
+                    ],
                   ),
-                  const Icon(Icons.chevron_right,
-                      size: 19, color: AppColors.textDim),
-                ],
+                ),
               ),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 200),
+                child: open && cycle != null
+                    ? Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () => Navigator.pop(
+                                    context, PickedExercise(name)),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.text,
+                                  side:
+                                      const BorderSide(color: AppColors.border),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12)),
+                                ),
+                                child: const Text('Без цикла'),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: FilledButton(
+                                onPressed: () => Navigator.pop(
+                                    context,
+                                    PickedExercise(name,
+                                        withCycle: true, cycleId: cycle!.id)),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: accent,
+                                  foregroundColor: Colors.black,
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12)),
+                                ),
+                                child: Text(
+                                    'Цикл · день ${cycle.curDay + 1}/${cycle.days.length}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w700)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : const SizedBox(width: double.infinity),
+              ),
+            ],
+          ),
+          if (exercise.favorite)
+            const Positioned(
+              left: -2,
+              top: -2,
+              child: Icon(Icons.star, size: 14, color: Color(0xFFFFC84A)),
             ),
-          ),
-          AnimatedSize(
-            duration: const Duration(milliseconds: 200),
-            child: open && cycle != null
-                ? Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () =>
-                                Navigator.pop(context, PickedExercise(name)),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.text,
-                              side: const BorderSide(color: AppColors.border),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
-                            ),
-                            child: const Text('Без цикла'),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: FilledButton(
-                            onPressed: () => Navigator.pop(
-                                context,
-                                PickedExercise(name,
-                                    withCycle: true, cycleId: cycle!.id)),
-                            style: FilledButton.styleFrom(
-                              backgroundColor: accent,
-                              foregroundColor: Colors.black,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
-                            ),
-                            child: Text(
-                                'Цикл · день ${cycle.curDay + 1}/${cycle.days.length}',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w700)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : const SizedBox(width: double.infinity),
-          ),
         ],
       ),
     );

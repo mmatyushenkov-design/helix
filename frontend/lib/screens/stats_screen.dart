@@ -472,13 +472,15 @@ class _StatsDetailScreenState extends State<StatsDetailScreen> {
       ),
       ('Всего тренировок', '${metrics.length}', 'за всё время'),
     ];
-    return GridView.count(
-      crossAxisCount: 2,
+    return GridView(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisExtent: 104,
+        mainAxisSpacing: 8,
+        crossAxisSpacing: 8,
+      ),
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 8,
-      crossAxisSpacing: 8,
-      childAspectRatio: 2.15,
       children: [
         for (final (label, value, subtitle) in tiles)
           Container(

@@ -149,6 +149,7 @@ class Exercise {
   List<String> secondaryMuscles;
   bool isCustom;
   bool archived;
+  bool favorite;
 
   Exercise({
     String? id,
@@ -160,6 +161,7 @@ class Exercise {
     this.secondaryMuscles = const [],
     this.isCustom = false,
     this.archived = false,
+    this.favorite = false,
   })  : id = id ?? exerciseIdForName(nameRu),
         nameEn = nameEn ?? nameRu;
 
@@ -175,6 +177,7 @@ class Exercise {
         'secondaryMuscles': secondaryMuscles,
         'isCustom': isCustom,
         'archived': archived,
+        'favorite': favorite,
       };
 
   factory Exercise.fromJson(Map<String, dynamic> j) => Exercise(
@@ -194,6 +197,7 @@ class Exercise {
         ],
         isCustom: j['isCustom'] as bool? ?? false,
         archived: j['archived'] as bool? ?? false,
+        favorite: j['favorite'] as bool? ?? false,
       );
 }
 
