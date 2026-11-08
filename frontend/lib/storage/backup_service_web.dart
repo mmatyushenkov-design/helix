@@ -6,4 +6,6 @@ class LocalBackupService {
       throw UnsupportedError('Импорт ZIP доступен в нативной версии');
   Future<String> exportCsv(Map<String, dynamic> snapshot) async =>
       throw UnsupportedError('CSV-экспорт доступен в нативной версии');
+  Future<String> createExportZip(Map<String, dynamic> snapshot) async =>
+      throw UnsupportedError('Экспорт данных доступен в нативной версии');
 }

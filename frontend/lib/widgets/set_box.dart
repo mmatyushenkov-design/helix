@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
+import 'dashed_border.dart';
 
 const pillColors = [
   Color(0xFF8A3030),
@@ -95,33 +96,41 @@ class SetBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final warm = data.rir == -1 || data.planned;
-    return Opacity(
-      opacity: warm ? 0.5 : 1,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(6, 8, 6, 6),
-        decoration: BoxDecoration(
-          color: AppColors.surface2,
-          border: Border.all(color: AppColors.border),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SetValueText(data: data, compact: compact),
-            if (data.pct != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 1),
-                child: Text('${data.pctApprox ? '~' : ''}${data.pct}%',
-                    style: const TextStyle(
-                        fontSize: 11, color: AppColors.textDim)),
-              ),
-            const SizedBox(height: 4),
-            if (data.format.usesRir) RirPill(code: data.rir),
-          ],
-        ),
+    // Плановый подход цикла: серая пунктирная обводка и серая RIR-плашка.
+    // После сохранения подхода обводка сплошная, плашка — в цвет RIR.
+    final box = Container(
+      padding: const EdgeInsets.fromLTRB(6, 8, 6, 6),
+      decoration: BoxDecoration(
+        color: AppColors.surface2,
+        border:
+            data.planned ? null : Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SetValueText(data: data, compact: compact),
+          if (data.pct != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 1),
+              child: Text('${data.pctApprox ? '~' : ''}${data.pct}%',
+                  style:
+                      const TextStyle(fontSize: 11, color: AppColors.textDim)),
+            ),
+          const SizedBox(height: 4),
+          if (data.format.usesRir)
+            RirPill(code: data.rir, gray: data.planned),
+        ],
       ),
     );
+    if (data.planned) {
+      return Opacity(
+        opacity: 0.75,
+        child: DashedBorder(
+            color: const Color(0xFF666666), radius: 12, child: box),
+      );
+    }
+    return Opacity(opacity: data.rir == -1 ? 0.5 : 1, child: box);
   }
 }
 
@@ -155,11 +164,13 @@ class SetValueText extends StatelessWidget {
 
 class RirPill extends StatelessWidget {
   final int code;
-  const RirPill({super.key, required this.code});
+  final bool gray;
+  const RirPill({super.key, required this.code, this.gray = false});
 
   @override
   Widget build(BuildContext context) {
-    final bg = code == -1 ? pillWarm : pillColors[code.clamp(0, 6)];
+    final bg =
+        (gray || code == -1) ? pillWarm : pillColors[code.clamp(0, 6)];
     return Container(
       height: 20,
       constraints: const BoxConstraints(minWidth: 40),

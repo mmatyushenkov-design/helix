@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
+import 'haptics.dart';
 import 'keypad.dart';
 import 'rir_slider.dart';
 
@@ -193,6 +194,7 @@ class _SetSheetState extends State<_SetSheet> {
   }
 
   void _save() {
+    hapticTick();
     final r = int.tryParse(_rBuf) ?? 0;
     if (_isTm) {
       Navigator.pop(
@@ -369,6 +371,7 @@ class _SetSheetState extends State<_SetSheet> {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () {
+                        hapticTick();
                         if (_canDelete) {
                           Navigator.pop(
                               context, const SetSheetResult(deleted: true));

@@ -4,6 +4,7 @@ import '../models/models.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
 import '../widgets/cycle_card.dart';
+import '../widgets/close_icon.dart';
 import '../widgets/confirm_dialog.dart';
 import '../widgets/dashed_border.dart';
 import '../widgets/set_box.dart';
@@ -267,18 +268,7 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
                   });
                 }
               },
-              child: Container(
-                width: 26,
-                height: 26,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border:
-                      Border.all(color: const Color(0xFFA03030), width: 1.5),
-                ),
-                child: const Center(
-                  child: Icon(Icons.close, size: 14, color: Color(0xFFD06060)),
-                ),
-              ),
+              child: const CloseBadge(size: 26),
             ),
           ]),
           const SizedBox(height: 10),

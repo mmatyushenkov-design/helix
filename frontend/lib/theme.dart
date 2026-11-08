@@ -20,6 +20,21 @@ class AppColors {
   static Color accentDim(Color accent) => accent.withValues(alpha: 0.18);
 }
 
+/// Цвета мышечных групп для точек календаря и пометок.
+const muscleGroupColors = <String, Color>{
+  'chest': Color(0xFFC9504C),
+  'arms': Color(0xFFD98A3D),
+  'back': Color(0xFF4D9FD1),
+  'legs': Color(0xFF3FBF7F),
+  'shoulders': Color(0xFF9C6BC0),
+  'core': Color(0xFFC9A227),
+  'full_body': Color(0xFF3D9C80),
+  'cardio': Color(0xFF4FA3D1),
+};
+
+Color muscleGroupColor(String code) =>
+    muscleGroupColors[code] ?? AppColors.textDim;
+
 class AppTheme {
   static ThemeData dark({Color accent = AppColors.accentGreen}) {
     final scheme = ColorScheme.dark(

@@ -17,23 +17,23 @@ void main() {
       ..tabIndex = 0;
   });
 
-  testWidgets('Пять разделов: навигация, заглушка шаблонов и статистика',
+  testWidgets('Пять разделов: навигация, заглушка программы и статистика',
       (tester) async {
     await tester.pumpWidget(const WorkoutTrackerApp());
     expect(find.text('Приседания'), findsOneWidget);
     for (final label in [
       'Циклы',
-      'Шаблоны',
+      'Программа',
       'Дневник',
       'Статистика',
       'Настройки'
     ]) {
       expect(find.text(label), findsWidgets);
     }
-    await tester.tap(find.text('Шаблоны'));
+    await tester.tap(find.text('Программа'));
     await tester.pumpAndSettle();
     expect(appState.tabIndex, 1);
-    expect(find.text('Раздел шаблонов пока пуст'), findsOneWidget);
+    expect(find.text('Раздел программы пока пуст'), findsOneWidget);
     await tester.tap(find.text('Статистика'));
     await tester.pumpAndSettle();
     expect(appState.tabIndex, 3);
@@ -238,7 +238,7 @@ void main() {
     expect(find.text('Приседания'), findsNothing);
   });
 
-  testWidgets('Будущий день цикла меняется только после подтверждения',
+  testWidgets('Другой день цикла начинается только после подтверждения',
       (tester) async {
     await tester.pumpWidget(const WorkoutTrackerApp());
     final cycle = appState.cycles.first;
@@ -246,7 +246,15 @@ void main() {
     final nextDay = oldDay + 1;
     final oldTm = cycle.tm;
     final chip = find.text(dayChipLabel(cycle, nextDay)).first;
+    // Выбор чипа — только просмотр, диалога нет, день цикла не меняется.
     await tester.tap(chip);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Вы уверены, что хотите начать день ${nextDay + 1}?'),
+        findsNothing);
+    expect(cycle.curDay, oldDay);
+    // «Начать» при выбранном другом дне — предупреждение.
+    await tester.tap(find.text('Начать').first);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('Вы уверены, что хотите начать день ${nextDay + 1}?'),
@@ -255,7 +263,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     expect(cycle.curDay, oldDay);
-    await tester.tap(chip);
+    await tester.tap(find.text('Начать').first);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     await tester.tap(find.byKey(const Key('future-day-yes')));

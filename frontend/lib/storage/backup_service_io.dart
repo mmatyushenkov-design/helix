@@ -42,13 +42,35 @@ class LocalBackupService {
     return file.path;
   }
 
+  /// Экспорт для отправки: один JSON со всеми данными (дневник, циклы,
+  /// упражнения, программы, настройки) внутри ZIP с именем Workout-Save-*.
+  Future<String> createExportZip(Map<String, dynamic> snapshot) async {
+    final now = DateTime.now();
+    String two(int v) => v.toString().padLeft(2, '0');
+    final stamp = '${now.year}-${two(now.month)}-${two(now.day)}-'
+        '${two(now.hour)}-${two(now.minute)}-${two(now.second)}';
+    final name = 'Workout-Save-$stamp';
+    final data = utf8.encode(jsonEncode(snapshot));
+    final archive = Archive()
+      ..addFile(ArchiveFile('$name.json', data.length, data));
+    final zip = ZipEncoder().encode(archive);
+    final file = await storage.writeBytes('exports/$name.zip', zip);
+    return file.path;
+  }
+
   Future<Map<String, dynamic>> restoreBackup(String path) async {
     final bytes = await File(path).readAsBytes();
     final archive = ZipDecoder().decodeBytes(bytes);
     final manifestFile = archive.findFile('manifest.json');
     final dataFile = archive.findFile('data.json');
     if (manifestFile == null || dataFile == null) {
-      throw const FormatException('В ZIP нет manifest.json или data.json');
+      // Экспортированный Workout-Save-*.zip: один JSON без манифеста.
+      final exported = archive.files.firstWhere(
+        (f) => f.isFile && f.name.endsWith('.json'),
+        orElse: () => throw const FormatException('В ZIP нет JSON с данными'),
+      );
+      return jsonDecode(utf8.decode(exported.content as List<int>))
+          as Map<String, dynamic>;
     }
     final manifest = jsonDecode(utf8.decode(manifestFile.content as List<int>))
         as Map<String, dynamic>;

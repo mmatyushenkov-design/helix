@@ -5,7 +5,9 @@ import '../state/app_state.dart';
 import '../theme.dart';
 import '../widgets/set_box.dart';
 import '../widgets/set_sheet.dart';
+import '../widgets/close_icon.dart';
 import '../widgets/confirm_dialog.dart';
+import '../widgets/haptics.dart';
 import '../widgets/dashed_border.dart';
 import 'diary_exercise_picker.dart';
 
@@ -55,6 +57,8 @@ class _DiaryScreenState extends State<DiaryScreen> {
   DateTime _selected = _dateOnly(DateTime.now());
   late DateTime _viewMonth = DateTime(_selected.year, _selected.month);
   bool _monthOpen = false;
+  int _weekDir = 1;
+  int _monthDir = 1;
 
   static final _leapYears = <int>{
     for (var year = 2025; year <= 3000; year++)
@@ -67,9 +71,15 @@ class _DiaryScreenState extends State<DiaryScreen> {
   void _select(DateTime d) {
     d = _dateOnly(d);
     if (d.isBefore(_minDate) || d.isAfter(_maxDate)) return;
+    hapticTick();
     setState(() {
+      _weekDir = d.isAfter(_selected) ? 1 : -1;
+      final nextMonth = DateTime(d.year, d.month);
+      if (nextMonth != _viewMonth) {
+        _monthDir = nextMonth.isAfter(_viewMonth) ? 1 : -1;
+      }
       _selected = d;
-      _viewMonth = DateTime(d.year, d.month);
+      _viewMonth = nextMonth;
     });
   }
 
@@ -79,7 +89,11 @@ class _DiaryScreenState extends State<DiaryScreen> {
         next.isAfter(DateTime(DateTime.now().year + 1, 12))) {
       return;
     }
-    setState(() => _viewMonth = next);
+    hapticTick();
+    setState(() {
+      _monthDir = delta.sign;
+      _viewMonth = next;
+    });
   }
 
   Future<void> _pickMonth() async {
@@ -88,50 +102,94 @@ class _DiaryScreenState extends State<DiaryScreen> {
     final picked = await showDialog<(int, int)>(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          backgroundColor: AppColors.surface,
-          title: const Text('Выберите месяц и год'),
-          content: Row(
-            children: [
-              Expanded(
-                child: DropdownButton<int>(
-                  value: month,
-                  isExpanded: true,
-                  dropdownColor: AppColors.surface2,
-                  items: [
-                    for (var i = 1; i <= 12; i++)
-                      DropdownMenuItem(value: i, child: Text(_monthsNom[i - 1]))
-                  ],
-                  onChanged: (value) =>
-                      setDialogState(() => month = value ?? month),
+        builder: (ctx, setDialogState) {
+          Widget plaque(Widget dropdown) => Container(
+                height: 48,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.surface2,
+                  border: Border.all(color: AppColors.border),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: DropdownButton<int>(
-                  value: year,
-                  isExpanded: true,
-                  dropdownColor: AppColors.surface2,
-                  items: [
-                    for (var y = 2025; y <= DateTime.now().year + 1; y++)
-                      DropdownMenuItem(value: y, child: Text('$y'))
-                  ],
-                  onChanged: (value) =>
-                      setDialogState(() => year = value ?? year),
+                child: DropdownButtonHideUnderline(child: dropdown),
+          );
+          const textStyle =
+              TextStyle(fontSize: 17, fontWeight: FontWeight.w600);
+          return AlertDialog(
+            backgroundColor: AppColors.surface,
+            title: const Text('Выберите месяц и год'),
+            content: Row(
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: plaque(DropdownButton<int>(
+                    value: month,
+                    isExpanded: true,
+                    style: textStyle,
+                    dropdownColor: AppColors.surface2,
+                    items: [
+                      for (var i = 1; i <= 12; i++)
+                        DropdownMenuItem(
+                            value: i, child: Text(_monthsNom[i - 1]))
+                    ],
+                    onChanged: (value) =>
+                        setDialogState(() => month = value ?? month),
+                  )),
                 ),
+                const SizedBox(width: 10),
+                Expanded(
+                  flex: 2,
+                  child: plaque(DropdownButton<int>(
+                    value: year,
+                    isExpanded: true,
+                    style: textStyle,
+                    dropdownColor: AppColors.surface2,
+                    items: [
+                      for (var y = 2025; y <= DateTime.now().year + 1; y++)
+                        DropdownMenuItem(value: y, child: Text('$y'))
+                    ],
+                    onChanged: (value) =>
+                        setDialogState(() => year = value ?? year),
+                  )),
+                ),
+              ],
+            ),
+            actions: [
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: appState.accent,
+                        side: BorderSide(color: appState.accent, width: 1.5),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('Отмена'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () => Navigator.pop(ctx, (year, month)),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: appState.accent,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('Выбрать',
+                          style: TextStyle(fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                ],
               ),
             ],
-          ),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Отмена')),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, (year, month)),
-              child: const Text('Выбрать'),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
     if (picked != null) _select(DateTime(picked.$2, picked.$1));
@@ -193,11 +251,13 @@ class _DiaryScreenState extends State<DiaryScreen> {
   }
 
   void _finish(DiaryEntry e) {
+    hapticTick();
     final res = appState.finishEntry(e);
     if (res != null && mounted) _showCelebrate(res);
   }
 
   void _confirmDelete(DiaryEntry e) async {
+    hapticTick();
     if (await showConfirmDialog(
         context, 'Вы уверены, что хотите удалить это упражнение?')) {
       appState.deleteEntry(_selected, e);
@@ -205,6 +265,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
   }
 
   Future<void> _pickExercise() async {
+    hapticTick();
     final picked = await showDiaryExercisePicker(context);
     if (picked == null) return;
     if (picked.withCycle) {
@@ -389,8 +450,13 @@ class _DiaryScreenState extends State<DiaryScreen> {
     return GestureDetector(
       onHorizontalDragEnd: (d) {
         final v = d.primaryVelocity ?? 0;
-        if (v < -200) _select(_selected.add(const Duration(days: 7)));
-        if (v > 200) _select(_selected.subtract(const Duration(days: 7)));
+        if (_monthOpen) {
+          if (v < -200) _changeMonth(1);
+          if (v > 200) _changeMonth(-1);
+        } else {
+          if (v < -200) _select(_selected.add(const Duration(days: 7)));
+          if (v > 200) _select(_selected.subtract(const Duration(days: 7)));
+        }
       },
       onVerticalDragEnd: (d) {
         final v = d.primaryVelocity ?? 0;
@@ -424,7 +490,11 @@ class _DiaryScreenState extends State<DiaryScreen> {
                         child: AnimatedOpacity(
                           duration: const Duration(milliseconds: 180),
                           opacity: _monthOpen ? 1 : 0,
-                          child: _buildMonth(accent, dates, weekRow),
+                          child: _slideSwap(
+                            key: ValueKey(_viewMonth),
+                            direction: _monthDir,
+                            child: _buildMonth(accent, dates, weekRow),
+                          ),
                         ),
                       ),
                     ),
@@ -438,7 +508,11 @@ class _DiaryScreenState extends State<DiaryScreen> {
                       child: AnimatedOpacity(
                         duration: const Duration(milliseconds: 180),
                         opacity: _monthOpen && weekRow < 0 ? 0 : 1,
-                        child: _buildWeekRow(accent),
+                        child: _slideSwap(
+                          key: ValueKey(_monday(_selected)),
+                          direction: _weekDir,
+                          child: _buildWeekRow(accent),
+                        ),
                       ),
                     ),
                   ],
@@ -468,6 +542,59 @@ class _DiaryScreenState extends State<DiaryScreen> {
     );
   }
 
+  /// Горизонтальная смена содержимого: старое уезжает вбок, новое выезжает.
+  Widget _slideSwap(
+      {required Key key, required int direction, required Widget child}) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 260),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeOutCubic,
+      layoutBuilder: (current, previous) => Stack(
+        alignment: Alignment.topCenter,
+        children: [...previous, if (current != null) current],
+      ),
+      transitionBuilder: (w, anim) {
+        final incoming = w.key == key;
+        final dx = (incoming ? direction : -direction).toDouble();
+        return ClipRect(
+          child: SlideTransition(
+            position:
+                Tween(begin: Offset(dx, 0), end: Offset.zero).animate(anim),
+            child: w,
+          ),
+        );
+      },
+      child: child,
+    );
+  }
+
+  /// Точки мышечных групп под числом даты: одна точка на группу.
+  Widget _dayDots(DateTime d, bool selected, {double dot = 5, double top = 3}) {
+    final groups = appState.dayMuscleGroups(d);
+    if (groups.isEmpty) return SizedBox(height: top + dot);
+    return Padding(
+      padding: EdgeInsets.only(top: top),
+      child: SizedBox(
+        height: dot,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            for (var i = 0; i < groups.length && i < 4; i++)
+              Container(
+                width: dot,
+                height: dot,
+                margin: EdgeInsets.only(left: i == 0 ? 0 : 2),
+                decoration: BoxDecoration(
+                  color: selected ? Colors.black : muscleGroupColor(groups[i]),
+                  shape: BoxShape.circle,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildWeekRow(Color accent) {
     final monday = _monday(_selected);
     return Row(
@@ -486,8 +613,6 @@ class _DiaryScreenState extends State<DiaryScreen> {
   Widget _weekDay(DateTime d, int dow, Color accent) {
     final sel = _dateOnly(d) == _selected;
     final today = _isToday(d);
-    final has =
-        appState.log.containsKey(dkey(d)) && appState.log[dkey(d)]!.isNotEmpty;
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: () => _select(d),
@@ -517,19 +642,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                     color: sel ? Colors.black : AppColors.text)),
-            SizedBox(
-              height: 8,
-              child: has
-                  ? Container(
-                      width: 5,
-                      height: 5,
-                      margin: const EdgeInsets.only(top: 3),
-                      decoration: BoxDecoration(
-                          color: sel ? Colors.black : accent,
-                          shape: BoxShape.circle),
-                    )
-                  : null,
-            ),
+            _dayDots(d, sel),
           ],
         ),
       ),
@@ -621,8 +734,6 @@ class _DiaryScreenState extends State<DiaryScreen> {
     final inWeek = !_dateOnly(d).isBefore(monday) &&
         _dateOnly(d).isBefore(monday.add(const Duration(days: 7)));
     final other = d.month != _viewMonth.month;
-    final has =
-        appState.log.containsKey(dkey(d)) && appState.log[dkey(d)]!.isNotEmpty;
     return Padding(
       padding: const EdgeInsets.all(2),
       child: InkWell(
@@ -650,19 +761,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
                           : other
                               ? const Color(0xFF777777)
                               : AppColors.text)),
-              SizedBox(
-                height: 7,
-                child: has
-                    ? Container(
-                        width: 5,
-                        height: 5,
-                        margin: const EdgeInsets.only(top: 2),
-                        decoration: BoxDecoration(
-                            color: sel ? Colors.black : accent,
-                            shape: BoxShape.circle),
-                      )
-                    : null,
-              ),
+              _dayDots(d, sel, dot: 4, top: 3),
             ],
           ),
         ),
@@ -798,18 +897,9 @@ class _DiaryScreenState extends State<DiaryScreen> {
                 : InkWell(
                     borderRadius: BorderRadius.circular(11),
                     onTap: () => _confirmDelete(e),
-                    child: Container(
-                      width: 22,
-                      height: 22,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                            color: const Color(0xFFA03030), width: 1.5),
-                      ),
-                      child: const Center(
-                        child: Icon(Icons.close,
-                            size: 12, color: Color(0xFFD06060)),
-                      ),
+                    child: const Padding(
+                      padding: EdgeInsets.all(2),
+                      child: CloseBadge(size: 20),
                     ),
                   ),
           ),
@@ -867,17 +957,25 @@ class _CelebrateAnimState extends State<_CelebrateAnim>
     super.dispose();
   }
 
+  bool _isDigit(String ch) => ch.length == 1 && '0123456789'.contains(ch);
+
   @override
   Widget build(BuildContext context) {
-    final oldValue = appState.weightFromKg(widget.oldTm);
-    final newValue = appState.weightFromKg(widget.oldTm + widget.step);
-    Text number(double value) => Text(
-          '${fmtW(value)} ${appState.weightLabel}',
-          style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: appState.accent),
-        );
+    final style = TextStyle(
+        fontSize: 22, fontWeight: FontWeight.w800, color: appState.accent);
+    final oldStr = fmtW(appState.weightFromKg(widget.oldTm));
+    final newStr = fmtW(appState.weightFromKg(widget.oldTm + widget.step));
+    final oldPadded = oldStr.padLeft(newStr.length);
+    final newPadded = newStr.padLeft(oldStr.length);
+
+    // Единая ширина цифры и высота строки для барабанов.
+    final measure = TextPainter(
+        text: TextSpan(text: '0', style: style),
+        textDirection: TextDirection.ltr)
+      ..layout();
+    final digitW = measure.width;
+    final lineH = measure.height;
+
     return AnimatedBuilder(
       animation: _ctrl,
       builder: (context, _) {
@@ -886,36 +984,111 @@ class _CelebrateAnimState extends State<_CelebrateAnim>
             Curves.easeInOut.transform(((t - 0.2) / 0.4).clamp(0.0, 1.0));
         var scale = 1.0;
         if (t >= 0.6 && t < 0.7) {
-          scale = 1 - 0.2 * ((t - 0.6) / 0.1);
-        } else if (t >= 0.7) {
-          scale = 0.8 + 0.2 * ((t - 0.7) / 0.05).clamp(0.0, 1.0);
+          scale = 1 - 0.15 * ((t - 0.6) / 0.1); // лёгкое сжатие
+        } else if (t >= 0.7 && t < 0.78) {
+          scale = 0.85 + 0.33 * ((t - 0.7) / 0.08); // сильный рост
+        } else if (t >= 0.78) {
+          scale = 1.18 - 0.18 * ((t - 0.78) / 0.1).clamp(0.0, 1.0);
         }
         if (t >= 0.9 && !_announced) {
           _announced = true;
           WidgetsBinding.instance.addPostFrameCallback((_) => widget.onReady());
         }
+
+        final cells = <Widget>[];
+        for (var i = 0; i < newPadded.length; i++) {
+          final oldCh = i < oldPadded.length ? oldPadded[i] : ' ';
+          final newCh = newPadded[i];
+          if (oldCh == newCh) {
+            // Неизменные цифры и символы остаются на месте.
+            cells.add(_staticCell(newCh, style, digitW, lineH));
+          } else if (_isDigit(oldCh) && _isDigit(newCh)) {
+            cells.add(_rollingDigit(oldCh, newCh, roll, style, digitW, lineH));
+          } else {
+            cells.add(_swapCell(oldCh, newCh, roll, style, digitW, lineH));
+          }
+        }
+
         return Transform.scale(
           scale: scale,
           child: SizedBox(
-            height: 30,
-            child: ClipRect(
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Transform.translate(
-                    offset: Offset(0, -32 * roll),
-                    child: number(oldValue),
-                  ),
-                  Transform.translate(
-                    offset: Offset(0, 32 * (1 - roll)),
-                    child: number(newValue),
-                  ),
-                ],
-              ),
+            height: lineH + 4,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ...cells,
+                Text(' ${appState.weightLabel}', style: style),
+              ],
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _staticCell(
+      String ch, TextStyle style, double digitW, double lineH) {
+    final w = _isDigit(ch) ? digitW : null;
+    return SizedBox(
+      width: w,
+      height: lineH,
+      child: Text(ch, style: style, textAlign: TextAlign.center),
+    );
+  }
+
+  /// Барабан одной цифры: пролетают все промежуточные значения сверху вниз.
+  Widget _rollingDigit(String oldCh, String newCh, double progress,
+      TextStyle style, double digitW, double lineH) {
+    final oldD = int.parse(oldCh);
+    final newD = int.parse(newCh);
+    final steps = (newD - oldD) % 10 == 0 ? 10 : (newD - oldD) % 10;
+    return SizedBox(
+      width: digitW,
+      height: lineH,
+      child: ClipRect(
+        child: Stack(
+          children: [
+            for (var k = 0; k <= steps; k++)
+              Positioned(
+                top: lineH * (progress * steps - k),
+                left: 0,
+                right: 0,
+                height: lineH,
+                child: Text('${(oldD + k) % 10}',
+                    style: style, textAlign: TextAlign.center),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Нечисловой символ (запятая, новый разряд): мягкая смена сверху вниз.
+  Widget _swapCell(String oldCh, String newCh, double progress,
+      TextStyle style, double digitW, double lineH) {
+    final w = _isDigit(newCh) ? digitW : null;
+    return SizedBox(
+      width: w,
+      height: lineH,
+      child: ClipRect(
+        child: Stack(
+          children: [
+            Positioned(
+              top: lineH * progress,
+              left: 0,
+              right: 0,
+              child: Text(oldCh, style: style, textAlign: TextAlign.center),
+            ),
+            Positioned(
+              top: -lineH * (1 - progress),
+              left: 0,
+              right: 0,
+              child: Text(newCh, style: style, textAlign: TextAlign.center),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

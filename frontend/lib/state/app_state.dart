@@ -249,6 +249,33 @@ class AppState extends ChangeNotifier {
 
   List<DiaryEntry> entriesOf(DateTime date) => log[dkey(date)] ??= [];
 
+  /// Мышечные группы, задействованные в записи дня (по основным мышцам).
+  Set<String> entryMuscleGroups(DiaryEntry entry) {
+    final exercise =
+        exerciseById(entry.exerciseId) ?? exerciseByName(entry.name);
+    if (exercise == null) return {};
+    final groups = <String>{};
+    for (final group in muscleCatalog) {
+      final codes = group.muscles.map((m) => m.code);
+      if (exercise.primaryMuscles.any(codes.contains)) groups.add(group.code);
+    }
+    return groups;
+  }
+
+  /// Уникальные группы мышц дня в порядке каталога — для точек календаря.
+  List<String> dayMuscleGroups(DateTime date) {
+    final entries = log[dkey(date)];
+    if (entries == null || entries.isEmpty) return const [];
+    final groups = <String>{};
+    for (final entry in entries) {
+      groups.addAll(entryMuscleGroups(entry));
+    }
+    return [
+      for (final group in muscleCatalog)
+        if (groups.contains(group.code)) group.code
+    ];
+  }
+
   DiaryEntry addEntry(
     DateTime date,
     String name, {

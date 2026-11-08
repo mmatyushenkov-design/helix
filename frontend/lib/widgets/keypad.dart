@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
+import 'haptics.dart';
 
 /// Цифровая клавиатура 3×4: 1–9, запятая, 0, бэкспейс.
 class NumKeypad extends StatelessWidget {
@@ -38,7 +39,10 @@ class NumKeypad extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
             child: InkWell(
               borderRadius: BorderRadius.circular(10),
-              onTap: () => onKey(k),
+              onTap: () {
+                hapticTick();
+                onKey(k);
+              },
               child: Center(
                 child: Text(k,
                     style: const TextStyle(

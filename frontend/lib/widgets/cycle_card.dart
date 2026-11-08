@@ -5,6 +5,7 @@ import '../screens/cycle_edit_screen.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
 import 'day_neck.dart';
+import 'haptics.dart';
 import 'set_box.dart';
 
 /// Карточка цикла на главной вкладке: чипы дней, шейка, панель подходов.
@@ -46,42 +47,50 @@ class _CycleCardState extends State<CycleCard>
     _swap.forward(from: 0);
   }
 
-  Future<void> _requestDay(int i) async {
-    if (i <= widget.cycle.curDay) {
-      _select(i);
-      return;
-    }
-    final accepted = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: Text('Вы уверены, что хотите начать день ${i + 1}?'),
-        content: Text('Текущий день цикла — ${widget.cycle.curDay + 1}'),
-        actions: [
-          TextButton(
-            key: const Key('future-day-yes'),
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(
-                foregroundColor: AppColors.text,
-                backgroundColor: AppColors.surface2),
-            child: const Text('Да'),
-          ),
-          FilledButton(
-            key: const Key('future-day-no'),
-            onPressed: () => Navigator.pop(ctx, false),
-            style: FilledButton.styleFrom(
-                backgroundColor: widget.accent, foregroundColor: Colors.black),
-            child: const Text('Нет'),
-          ),
-        ],
-      ),
-    );
-    if (accepted == true) {
-      widget.cycle.curDay = i;
-      _lastCurDay = i;
+  /// Выбор дня чипом — просто просмотр, без диалогов.
+  void _requestDay(int i) {
+    hapticTick();
+    _select(i);
+  }
+
+  /// «Начать»: если выбран не текущий (в т. ч. уже пройденный) день —
+  /// сначала предупреждение и подтверждение смены дня цикла.
+  Future<void> _start() async {
+    hapticTick();
+    final c = widget.cycle;
+    if (_sel != c.curDay) {
+      final accepted = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppColors.surface,
+          title: Text('Вы уверены, что хотите начать день ${_sel + 1}?'),
+          content: Text('Текущий день цикла — ${c.curDay + 1}'),
+          actions: [
+            TextButton(
+              key: const Key('future-day-yes'),
+              onPressed: () => Navigator.pop(ctx, true),
+              style: TextButton.styleFrom(
+                  foregroundColor: AppColors.text,
+                  backgroundColor: AppColors.surface2),
+              child: const Text('Да'),
+            ),
+            FilledButton(
+              key: const Key('future-day-no'),
+              onPressed: () => Navigator.pop(ctx, false),
+              style: FilledButton.styleFrom(
+                  backgroundColor: widget.accent,
+                  foregroundColor: Colors.black),
+              child: const Text('Нет'),
+            ),
+          ],
+        ),
+      );
+      if (accepted != true) return;
+      c.curDay = _sel;
+      _lastCurDay = _sel;
       appState.touch();
-      if (mounted) _select(i);
     }
+    appState.startCycleDay(c);
   }
 
   void _openEditor(BuildContext context) {
@@ -276,7 +285,7 @@ class _CycleCardState extends State<CycleCard>
               child: SizedBox(
                 height: 44,
                 child: FilledButton(
-                  onPressed: () => appState.startCycleDay(widget.cycle),
+                  onPressed: _start,
                   style: FilledButton.styleFrom(
                     backgroundColor: accent,
                     foregroundColor: Colors.black,

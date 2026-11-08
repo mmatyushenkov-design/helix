@@ -1,11 +1,13 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../models/models.dart';
 import '../state/app_state.dart';
 import '../state/strings.dart';
 import '../storage/backup_service.dart';
 import '../theme.dart';
+import '../widgets/haptics.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -26,6 +28,21 @@ class SettingsScreen extends StatelessWidget {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(path)));
       }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('$e')));
+      }
+    }
+  }
+
+  /// Экспорт: JSON со всеми данными → ZIP → системное окно «Поделиться»
+  /// (Telegram, почта, WhatsApp и другие приложения через «Ещё»).
+  Future<void> _exportData(BuildContext context) async {
+    try {
+      final path =
+          await LocalBackupService().createExportZip(appState.toJson());
+      await SharePlus.instance.share(ShareParams(files: [XFile(path)]));
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context)
@@ -88,7 +105,10 @@ class SettingsScreen extends StatelessWidget {
                   DropdownMenuItem(value: 'ru', child: Text('Русский')),
                   DropdownMenuItem(value: 'en', child: Text('English')),
                 ],
-                onChanged: (v) => appState.setLanguage(v ?? 'ru'),
+                onChanged: (v) {
+                  hapticTick();
+                  appState.setLanguage(v ?? 'ru');
+                },
               ),
             ),
           ]),
@@ -107,7 +127,10 @@ class SettingsScreen extends StatelessWidget {
                   const DropdownMenuItem(
                       value: WeightUnit.lb, child: Text('lb')),
                 ],
-                onChanged: (v) => appState.setWeightUnit(v ?? WeightUnit.kg),
+                onChanged: (v) {
+                  hapticTick();
+                  appState.setWeightUnit(v ?? WeightUnit.kg);
+                },
               ),
             ),
             _row(
@@ -126,8 +149,10 @@ class SettingsScreen extends StatelessWidget {
                       child: Text(distanceUnitLabel(
                           DistanceUnit.mi, appState.language))),
                 ],
-                onChanged: (v) =>
-                    appState.setDistanceUnit(v ?? DistanceUnit.km),
+                onChanged: (v) {
+                  hapticTick();
+                  appState.setDistanceUnit(v ?? DistanceUnit.km);
+                },
               ),
             ),
           ]),
@@ -135,8 +160,7 @@ class SettingsScreen extends StatelessWidget {
             _row(
               tr('backup'),
               trailing: const _Val('›'),
-              onTap: () => _runFileAction(context,
-                  () => LocalBackupService().createBackup(appState.toJson())),
+              onTap: () => _exportData(context),
             ),
             _row(tr('restore'),
                 trailing: const _Val('›'), onTap: () => _restore(context)),
@@ -148,7 +172,7 @@ class SettingsScreen extends StatelessWidget {
             ),
           ]),
           _group(tr('about'),
-              [_row(tr('version'), trailing: const _Val('beta-0.3.1'))]),
+              [_row(tr('version'), trailing: const _Val('beta-0.4.1'))]),
         ],
       ),
     );
@@ -183,7 +207,12 @@ class SettingsScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
       ),
       child: InkWell(
-        onTap: onTap,
+        onTap: onTap == null
+            ? null
+            : () {
+                hapticTick();
+                onTap();
+              },
         borderRadius: BorderRadius.circular(14),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -217,7 +246,10 @@ class _AccentDot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => appState.setAccent(color),
+      onTap: () {
+        hapticTick();
+        appState.setAccent(color);
+      },
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 6),
         child: AnimatedScale(

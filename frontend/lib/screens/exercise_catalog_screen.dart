@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
+import '../widgets/haptics.dart';
 
 Future<void> showExerciseEditDialog(BuildContext context,
     {Exercise? exercise, String? initialGroup}) {
@@ -48,6 +49,7 @@ class _ExerciseEditDialogState extends State<ExerciseEditDialog> {
 
   void _save() {
     if (name.text.trim().isEmpty) return;
+    hapticTick();
     final old = widget.exercise;
     final selected = muscleCatalog.firstWhere((g) => g.code == group);
     final sameGroup = old != null && _groupOf(old) == group;

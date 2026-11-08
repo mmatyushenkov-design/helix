@@ -10,6 +10,7 @@ import 'state/app_state.dart';
 import 'state/persistence.dart';
 import 'state/strings.dart';
 import 'theme.dart';
+import 'widgets/haptics.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,6 +37,8 @@ class WorkoutTrackerApp extends StatelessWidget {
           GlobalCupertinoLocalizations.delegate,
         ],
         theme: AppTheme.dark(accent: appState.accent),
+        builder: (context, child) =>
+            HapticTapScope(child: child ?? const SizedBox.shrink()),
         home: switch (Uri.base.queryParameters['screen']) {
           'stats' => const StatsListScreen(),
           'stats-detail' => Builder(builder: (context) {
@@ -78,15 +81,20 @@ class _MainShellState extends State<MainShell> {
     appState.addListener(_syncTab);
   }
 
+  bool _programmatic = false;
+
   void _syncTab() {
     if (!_controller.hasClients) return;
     final current = _controller.page?.round() ?? appState.tabIndex;
     if (current != appState.tabIndex) {
-      _controller.animateToPage(
+      _programmatic = true;
+      _controller
+          .animateToPage(
         appState.tabIndex,
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOut,
-      );
+      )
+          .whenComplete(() => _programmatic = false);
     }
   }
 
@@ -105,7 +113,12 @@ class _MainShellState extends State<MainShell> {
         body: SafeArea(
           child: PageView(
             controller: _controller,
-            onPageChanged: appState.goToTab,
+            onPageChanged: (i) {
+              // Отдача только на свайп пользователя; при переходе кнопкой
+              // через несколько разделов импульс один — от самого нажатия.
+              if (!_programmatic) hapticTick();
+              appState.goToTab(i);
+            },
             children: _screens,
           ),
         ),
@@ -165,7 +178,10 @@ class _AnimatedNavBar extends StatelessWidget {
                         for (var i = 0; i < _items.length; i++)
                           Expanded(
                             child: InkWell(
-                              onTap: () => appState.goToTab(i),
+                              onTap: () {
+                                hapticTick();
+                                appState.goToTab(i);
+                              },
                               borderRadius: BorderRadius.circular(13),
                               child: SizedBox(
                                 height: 68,

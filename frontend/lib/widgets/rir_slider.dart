@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'haptics.dart';
+
 /// Цвета сегментов шкалы RIR: от «в отказ» до «10+».
 const scaleColors = [
   Color(0xFF8E1616),
@@ -31,6 +33,7 @@ class RirSlider extends StatelessWidget {
   void _fromPosition(BuildContext context, double x) {
     final box = context.findRenderObject() as RenderBox;
     final i = (x / (box.size.width / 7)).floor().clamp(0, 6);
+    if (i != index) hapticTick(); // короткий тик на каждый сегмент
     onChanged(i);
   }
 
