@@ -182,7 +182,7 @@ cython_debug/
 
 # Project-local Android toolchain and generated install packages
 .tooling/
-artifacts/
+releases/
 Androidsdk/
 tools/
 mockup/screens/

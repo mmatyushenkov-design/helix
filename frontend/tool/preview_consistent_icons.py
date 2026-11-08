@@ -1,11 +1,8 @@
 from pathlib import Path
-import shutil
 from PIL import Image, ImageDraw
 
 root = Path(__file__).resolve().parents[1]
 source_dir = root / 'assets' / 'muscle_groups_consistent'
-originals = root.parent / 'references' / 'generated-muscle-groups-consistent'
-originals.mkdir(parents=True, exist_ok=True)
 preview = root / 'build' / 'preview'
 preview.mkdir(parents=True, exist_ok=True)
 codes = ['chest', 'arms', 'back', 'legs', 'shoulders', 'core', 'full_body', 'cardio']
@@ -15,7 +12,6 @@ sheet = Image.new('RGB', (4 * 280, 2 * 300), '#1E1E1E')
 draw = ImageDraw.Draw(sheet)
 for index, (code, color) in enumerate(zip(codes, colors)):
     path = source_dir / f'{code}.png'
-    shutil.copy2(path, originals / path.name)
     with Image.open(path) as source:
         source = source.convert('RGBA')
         alpha = source.getchannel('A')
