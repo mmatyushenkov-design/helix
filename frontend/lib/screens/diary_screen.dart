@@ -560,7 +560,21 @@ class _DiaryScreenState extends State<DiaryScreen> {
                 height: _monthOpen ? monthHeight : _weekHeight,
                 child: Stack(
                   children: [
-                    Positioned.fill(
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      top: 0,
+                      height: _monthHeaderHeight,
+                      child: Offstage(
+                        offstage: !_monthOpen,
+                        child: _buildMonthHeader(),
+                      ),
+                    ),
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      top: _monthHeaderHeight,
+                      bottom: 0,
                       child: Offstage(
                         offstage: !_monthOpen,
                         child: PageView.builder(
@@ -720,67 +734,71 @@ class _DiaryScreenState extends State<DiaryScreen> {
     );
   }
 
-  Widget _buildMonth(Color accent, DateTime month, List<DateTime> dates) {
-    final y = month.year, m = month.month;
-    return Column(
-      children: [
-        SizedBox(
-          height: 52,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(4, 6, 4, 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _monthNav('‹', () => _changeMonth(-1)),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: InkWell(
-                      key: const Key('month-picker'),
-                      borderRadius: BorderRadius.circular(10),
-                      onTap: _pickMonth,
-                      child: Container(
-                        height: 34,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: AppColors.border),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text('${_monthsNom[m - 1]} $y',
-                            style: const TextStyle(
-                                fontSize: 15, fontWeight: FontWeight.w700)),
+  /// Шапка не входит в PageView: при свайпе движется только сетка дат.
+  Widget _buildMonthHeader() {
+    final y = _viewMonth.year, m = _viewMonth.month;
+    return Column(children: [
+      SizedBox(
+        height: 52,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(4, 6, 4, 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _monthNav('‹', () => _changeMonth(-1)),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: InkWell(
+                    key: const Key('month-picker'),
+                    borderRadius: BorderRadius.circular(10),
+                    onTap: _pickMonth,
+                    child: Container(
+                      height: 34,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: AppColors.border),
+                        borderRadius: BorderRadius.circular(10),
                       ),
+                      child: Text('${_monthsNom[m - 1]} $y',
+                          style: const TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.w700)),
                     ),
                   ),
                 ),
-                _monthNav('›', () => _changeMonth(1)),
-              ],
-            ),
+              ),
+              _monthNav('›', () => _changeMonth(1)),
+            ],
           ),
         ),
+      ),
+      SizedBox(
+        height: 18,
+        child: Row(children: [
+          for (final d in _dows)
+            Expanded(
+                child: Center(
+                    child: Text(d,
+                        style: const TextStyle(
+                            fontSize: 11, color: AppColors.textDim))))
+        ]),
+      ),
+    ]);
+  }
+
+  Widget _buildMonth(Color accent, DateTime month, List<DateTime> dates) {
+    return Column(children: [
+      for (var r = 0; r < dates.length ~/ 7; r++)
         SizedBox(
-          height: 18,
+          height: _monthRowHeight,
           child: Row(children: [
-            for (final d in _dows)
+            for (var c = 0; c < 7; c++)
               Expanded(
-                  child: Center(
-                      child: Text(d,
-                          style: const TextStyle(
-                              fontSize: 11, color: AppColors.textDim))))
+                  child: _monthCell(dates[r * 7 + c],
+                      month: month, accent: accent))
           ]),
         ),
-        for (var r = 0; r < dates.length ~/ 7; r++)
-          SizedBox(
-            height: _monthRowHeight,
-            child: Row(children: [
-              for (var c = 0; c < 7; c++)
-                Expanded(
-                    child: _monthCell(dates[r * 7 + c],
-                        month: month, accent: accent))
-            ]),
-          ),
-      ],
-    );
+    ]);
   }
 
   Widget _monthNav(String label, VoidCallback onTap) {
