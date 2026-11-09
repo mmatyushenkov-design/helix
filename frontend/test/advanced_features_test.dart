@@ -9,6 +9,25 @@ import 'package:workout_tracker_frontend/storage/local_database.dart';
 void main() {
   setUpAll(sqfliteFfiInit);
 
+  test('Каталог: 173 упражнения, точный порядок групп и подходящие форматы', () {
+    final exercises = defaultExercises();
+    expect(exercises, hasLength(173));
+    expect(exercises.map((e) => e.nameRu).toSet(), hasLength(173));
+    expect(muscleCatalog.map((g) => g.code), [
+      'chest', 'back', 'shoulders', 'arms', 'legs', 'core', 'cardio', 'full_body'
+    ]);
+    expect(exercises.first.nameRu, 'Жим штанги лежа');
+    expect(exercises.last.nameRu, 'выход силой на перекладине');
+    Exercise byName(String name) =>
+        exercises.singleWhere((exercise) => exercise.nameRu == name);
+    expect(byName('Жим штанги лежа').format, RecordFormat.weightReps);
+    expect(byName('Беговая дорожка').format, RecordFormat.timeDistance);
+    expect(byName('Эллипсоид').format, RecordFormat.timeDistance);
+    expect(byName('Планка').format, RecordFormat.timeReps);
+    expect(byName('Скакалка').format, RecordFormat.timeReps);
+    expect(byName('Прогулка фермера').format, RecordFormat.weightTime);
+  });
+
   test('Единицы: конвертация kg/lb и km/mi обратима', () {
     expect(displayToKg(kgToDisplay(100, WeightUnit.lb), WeightUnit.lb),
         closeTo(100, 1e-9));

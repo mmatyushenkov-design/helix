@@ -5,8 +5,16 @@ import 'package:workout_tracker_frontend/state/app_state.dart';
 import 'package:workout_tracker_frontend/storage/local_store_io.dart';
 
 void main() {
+  test('Новая установка: пустые дневник, циклы и программы', () {
+    final initial = AppState()..initializeDefaults();
+    expect(initial.exercises, isNotEmpty);
+    expect(initial.log, isEmpty);
+    expect(initial.cycles, isEmpty);
+    expect(initial.templates, isEmpty);
+  });
+
   test('Снапшот состояния: сериализация и восстановление без потерь', () {
-    final before = appState;
+    final before = AppState()..seed();
     final c = before.cycles.first;
     c.tm += c.step; // имитируем изменение
     before.exercises.first.favorite = true;

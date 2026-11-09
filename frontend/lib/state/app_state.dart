@@ -15,19 +15,39 @@ class AppState extends ChangeNotifier {
   final List<Cycle> cycles = [];
   final List<WorkoutTemplate> templates = [];
   final Map<String, List<DiaryEntry>> log = {};
-  Color accent = AppColors.accentGreen;
+  Color accent = AppColors.accentOrange;
   String language = 'ru';
   WeightUnit weightUnit = WeightUnit.kg;
   DistanceUnit distanceUnit = DistanceUnit.km;
   int tabIndex = 0;
 
-  void seed() {
+  /// Чистое начальное состояние новой установки: стандартный каталог
+  /// упражнений остаётся, а дневник, циклы и программы пусты.
+  void initializeDefaults() {
     exercises
       ..clear()
       ..addAll(defaultExercises());
     cycles.clear();
     templates.clear();
     log.clear();
+  }
+
+  /// Демонстрационные данные для тестов и отдельных сценариев разработки.
+  void seed() {
+    initializeDefaults();
+    // Прежние названия нужны только демонстрационным сценариям тестов.
+    exercises.insertAll(0, [
+      Exercise(nameRu: 'Приседания', primaryMuscles: ['quads']),
+      Exercise(nameRu: 'Жим лёжа', primaryMuscles: ['mid_chest']),
+      Exercise(nameRu: 'Становая тяга', primaryMuscles: ['lower_back']),
+      Exercise(nameRu: 'Жим стоя', primaryMuscles: ['front_delts']),
+      Exercise(nameRu: 'Подтягивания', primaryMuscles: ['lats']),
+      Exercise(nameRu: 'Бицепс со штангой', primaryMuscles: ['biceps']),
+      Exercise(
+          nameRu: 'Бег',
+          format: RecordFormat.timeDistance,
+          primaryMuscles: ['cardio']),
+    ]);
     for (final (name, bestW, bestR, tm, step, curDay) in [
       ('Приседания', 140.0, 5, 163.0, 5.0, 1),
       ('Жим лёжа', 100.0, 6, 120.0, 2.5, 0),
@@ -464,7 +484,8 @@ class AppState extends ChangeNotifier {
         }
       }
     }
-    accent = Color(j['accent'] as int? ?? AppColors.accentGreen.toARGB32());
+    // Единый фирменный акцент; старые пользовательские цвета игнорируем.
+    accent = AppColors.accentOrange;
     language = j['language'] as String? ?? 'ru';
     weightUnit = WeightUnit.values.firstWhere((u) => u.name == j['weightUnit'],
         orElse: () => WeightUnit.kg);
@@ -474,4 +495,4 @@ class AppState extends ChangeNotifier {
   }
 }
 
-final AppState appState = AppState()..seed();
+final AppState appState = AppState()..initializeDefaults();

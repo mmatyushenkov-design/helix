@@ -12,14 +12,6 @@ import '../widgets/haptics.dart';
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
-  static const _accents = [
-    AppColors.accentGreen,
-    AppColors.accentBlue,
-    AppColors.accentOrange,
-    AppColors.accentPurple,
-    AppColors.accentRed,
-  ];
-
   Future<void> _runFileAction(
       BuildContext context, Future<String> Function() action) async {
     try {
@@ -88,13 +80,6 @@ class SettingsScreen extends StatelessWidget {
                     const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
           ),
           _group(tr('appearance'), [
-            _row(
-              tr('accent'),
-              trailing: Row(children: [
-                for (final c in _accents)
-                  _AccentDot(color: c, selected: appState.accent == c)
-              ]),
-            ),
             _row(
               tr('language'),
               trailing: SizedBox(
@@ -183,7 +168,7 @@ class SettingsScreen extends StatelessWidget {
             ),
           ]),
           _group(tr('about'),
-              [_row(tr('version'), trailing: const _Val('beta-0.4.3'))]),
+              [_row(tr('version'), trailing: const _Val('release-1.0.0'))]),
         ],
       ),
     );
@@ -249,42 +234,3 @@ class _Val extends StatelessWidget {
       style: const TextStyle(fontSize: 14, color: AppColors.textDim));
 }
 
-class _AccentDot extends StatelessWidget {
-  final Color color;
-  final bool selected;
-  const _AccentDot({required this.color, required this.selected});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        hapticTick();
-        appState.setAccent(color);
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6),
-        child: AnimatedScale(
-          scale: selected ? 1.15 : 1,
-          duration: const Duration(milliseconds: 120),
-          child: Container(
-            width: 26,
-            height: 26,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-              border: Border.all(
-                  color: selected ? Colors.white : Colors.transparent,
-                  width: 2),
-              boxShadow: selected
-                  ? [
-                      const BoxShadow(color: AppColors.bg, spreadRadius: 3),
-                      BoxShadow(color: color, spreadRadius: 5)
-                    ]
-                  : null,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}

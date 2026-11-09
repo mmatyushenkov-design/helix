@@ -143,7 +143,7 @@ void main() {
     expect(find.text('Ноябрь ${DateTime.now().year}'), findsOneWidget);
   });
 
-  testWidgets('Пять подходов: RIR и отказ остаются однострочными',
+  testWidgets('Шесть подходов: RIR 5+ и отказ остаются однострочными',
       (tester) async {
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(
@@ -151,7 +151,7 @@ void main() {
           child: SizedBox(
             width: 360,
             child: SetFlow(sets: [
-              for (var i = 0; i < 5; i++) SetBoxData(w: 100, reps: 10, rir: i),
+              for (var i = 0; i < 6; i++) SetBoxData(w: 100, reps: 10, rir: i),
             ]),
           ),
         ),
@@ -159,6 +159,7 @@ void main() {
     ));
     expect(find.text('отказ'), findsOneWidget);
     expect(find.text('RIR 2'), findsOneWidget);
+    expect(find.text('RIR 5+'), findsOneWidget);
     final labels = tester
         .widgetList<Text>(find.descendant(
           of: find.byType(SetFlow),
@@ -166,7 +167,7 @@ void main() {
         ))
         .where((text) =>
             text.data == 'отказ' || text.data?.startsWith('RIR') == true);
-    expect(labels, hasLength(5));
+    expect(labels, hasLength(6));
     for (final label in labels) {
       expect(label.maxLines, 1);
       expect(label.softWrap, isFalse);
@@ -174,7 +175,7 @@ void main() {
     expect(
         find.descendant(
             of: find.byType(SetFlow), matching: find.byType(FittedBox)),
-        findsNWidgets(10));
+        findsNWidgets(12));
   });
 
   testWidgets('Редактор подхода сохраняет все четыре формата', (tester) async {

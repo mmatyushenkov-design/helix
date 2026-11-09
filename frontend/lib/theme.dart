@@ -36,7 +36,7 @@ Color muscleGroupColor(String code) =>
     muscleGroupColors[code] ?? AppColors.textDim;
 
 class AppTheme {
-  static ThemeData dark({Color accent = AppColors.accentGreen}) {
+  static ThemeData dark({Color accent = AppColors.accentOrange}) {
     final scheme = ColorScheme.dark(
       primary: accent,
       surface: AppColors.surface,
