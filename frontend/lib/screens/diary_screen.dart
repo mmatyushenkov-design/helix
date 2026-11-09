@@ -54,33 +54,76 @@ class DiaryScreen extends StatefulWidget {
 }
 
 class _DiaryScreenState extends State<DiaryScreen> {
+  static const _pageBase = 10000;
   DateTime _selected = _dateOnly(DateTime.now());
   late DateTime _viewMonth = DateTime(_selected.year, _selected.month);
+  late DateTime _viewMonday = _monday(_selected);
   bool _monthOpen = false;
-  int _weekDir = 1;
-  int _monthDir = 1;
-
-  static final _leapYears = <int>{
-    for (var year = 2025; year <= 3000; year++)
-      if (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) year
-  };
+  late final PageController _weekPages =
+      PageController(initialPage: _weekPage(_viewMonday));
+  late final PageController _monthPages =
+      PageController(initialPage: _monthPage(_viewMonth));
 
   DateTime get _minDate => DateTime(2025);
   DateTime get _maxDate => DateTime(DateTime.now().year + 1, 12, 31);
+  int _weekPage(DateTime monday) =>
+      _pageBase + monday.difference(_monday(_minDate)).inDays ~/ 7;
+  DateTime _weekAt(int page) =>
+      _monday(_minDate).add(Duration(days: (page - _pageBase) * 7));
+  int _monthPage(DateTime month) =>
+      _pageBase + (month.year - 2025) * 12 + month.month - 1;
+  DateTime _monthAt(int page) {
+    final offset = page - _pageBase;
+    return DateTime(2025 + offset ~/ 12, offset % 12 + 1);
+  }
+
+  @override
+  void dispose() {
+    _weekPages.dispose();
+    _monthPages.dispose();
+    super.dispose();
+  }
+
+  void _syncPages() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final weekPage = _weekPage(_viewMonday);
+      final monthPage = _monthPage(_viewMonth);
+      if (_weekPages.hasClients && _weekPages.page?.round() != weekPage) {
+        _weekPages.jumpToPage(weekPage);
+      }
+      if (_monthPages.hasClients && _monthPages.page?.round() != monthPage) {
+        _monthPages.jumpToPage(monthPage);
+      }
+    });
+  }
 
   void _select(DateTime d) {
     d = _dateOnly(d);
     if (d.isBefore(_minDate) || d.isAfter(_maxDate)) return;
     hapticTick();
     setState(() {
-      _weekDir = d.isAfter(_selected) ? 1 : -1;
-      final nextMonth = DateTime(d.year, d.month);
-      if (nextMonth != _viewMonth) {
-        _monthDir = nextMonth.isAfter(_viewMonth) ? 1 : -1;
-      }
       _selected = d;
-      _viewMonth = nextMonth;
+      _viewMonday = _monday(d);
+      _viewMonth = DateTime(d.year, d.month);
     });
+    _syncPages();
+  }
+
+  void _returnToSelectedWeek() {
+    setState(() => _viewMonday = _monday(_selected));
+    _syncPages();
+  }
+
+  void _toggleMonth() {
+    setState(() {
+      _monthOpen = !_monthOpen;
+      if (!_monthOpen) {
+        _viewMonday = _monday(_selected);
+        _viewMonth = DateTime(_selected.year, _selected.month);
+      }
+    });
+    _syncPages();
   }
 
   void _changeMonth(int delta) {
@@ -90,10 +133,9 @@ class _DiaryScreenState extends State<DiaryScreen> {
       return;
     }
     hapticTick();
-    setState(() {
-      _monthDir = delta.sign;
-      _viewMonth = next;
-    });
+    _monthPages.animateToPage(_monthPage(next),
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic);
   }
 
   Future<void> _pickMonth() async {
@@ -112,7 +154,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: DropdownButtonHideUnderline(child: dropdown),
-          );
+              );
           const textStyle =
               TextStyle(fontSize: 17, fontWeight: FontWeight.w600);
           return AlertDialog(
@@ -252,6 +294,60 @@ class _DiaryScreenState extends State<DiaryScreen> {
 
   void _finish(DiaryEntry e) {
     hapticTick();
+    // Остались серые плановые подходы — сначала предупреждение.
+    if (e.sets.any((s) => s.planned)) {
+      showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppColors.surface,
+          content: const Text(
+              'Выполнены не все подходы, запланированные на это упражнение. Завершить?'),
+          actions: [
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.text,
+                      side: const BorderSide(color: AppColors.border),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Продолжить'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: FilledButton(
+                    key: const Key('finish-anyway'),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _finishNow(e);
+                    },
+                    style: FilledButton.styleFrom(
+                      backgroundColor: appState.accent,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Завершить',
+                        style: TextStyle(fontWeight: FontWeight.w700)),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    _finishNow(e);
+  }
+
+  void _finishNow(DiaryEntry e) {
     final res = appState.finishEntry(e);
     if (res != null && mounted) _showCelebrate(res);
   }
@@ -282,10 +378,12 @@ class _DiaryScreenState extends State<DiaryScreen> {
                     rir: s.rir,
                     planned: true),
             ]);
+        _returnToSelectedWeek();
         return;
       }
     }
     appState.addEntry(_selected, picked.name);
+    _returnToSelectedWeek();
   }
 
   /* ---------- поздравление с концом цикла ---------- */
@@ -311,7 +409,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
                     style:
                         TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 16),
-                _CelebrateAnim(
+                CelebrateAnim(
                   oldTm: res.oldTm,
                   step: res.step,
                   onReady: () => setDialogState(() => ready = true),
@@ -430,38 +528,20 @@ class _DiaryScreenState extends State<DiaryScreen> {
   Widget _buildCalendar(Color accent) {
     final y = _viewMonth.year, m = _viewMonth.month;
     final lead = (DateTime(y, m, 1).weekday - 1) % 7;
-    final daysIn =
-        m == 2 && _leapYears.contains(y) ? 29 : DateTime(y, m + 1, 0).day;
-    final cellCount = ((lead + daysIn + 6) ~/ 7) * 7;
-    final first = DateTime(y, m, 1).subtract(Duration(days: lead));
-    final dates = [
-      for (var i = 0; i < cellCount; i++) first.add(Duration(days: i))
-    ];
-    final monday = _monday(_selected);
-    final weekIndex = dates.indexWhere((d) => _dateOnly(d) == monday);
-    final weekRow = weekIndex < 0 ? -1 : weekIndex ~/ 7;
-    final rows = cellCount ~/ 7;
-    final monthHeight = _monthHeaderHeight +
-        rows * _monthRowHeight +
-        (weekRow >= 0 ? _weekHeight - _monthRowHeight : 0);
-    final weekTop =
-        weekRow < 0 ? 0.0 : _monthHeaderHeight + weekRow * _monthRowHeight;
+    final rows = ((lead + DateTime(y, m + 1, 0).day + 6) ~/ 7);
+    final monthHeight = _monthHeaderHeight + rows * _monthRowHeight;
+    final weekCount =
+        _monday(_maxDate).difference(_monday(_minDate)).inDays ~/ 7 + 1;
+    final monthCount = (DateTime.now().year + 1 - 2025 + 1) * 12;
+    // Нумерация страниц начинается с _pageBase, поэтому учитываем его в count.
+    final weekItemCount = _pageBase + weekCount;
+    final monthItemCount = _pageBase + monthCount;
 
     return GestureDetector(
-      onHorizontalDragEnd: (d) {
-        final v = d.primaryVelocity ?? 0;
-        if (_monthOpen) {
-          if (v < -200) _changeMonth(1);
-          if (v > 200) _changeMonth(-1);
-        } else {
-          if (v < -200) _select(_selected.add(const Duration(days: 7)));
-          if (v > 200) _select(_selected.subtract(const Duration(days: 7)));
-        }
-      },
       onVerticalDragEnd: (d) {
         final v = d.primaryVelocity ?? 0;
-        if (v > 200 && !_monthOpen) setState(() => _monthOpen = true);
-        if (v < -200 && _monthOpen) setState(() => _monthOpen = false);
+        if (v > 200 && !_monthOpen) _toggleMonth();
+        if (v < -200 && _monthOpen) _toggleMonth();
       },
       child: Container(
         key: const Key('calendar'),
@@ -480,38 +560,56 @@ class _DiaryScreenState extends State<DiaryScreen> {
                 height: _monthOpen ? monthHeight : _weekHeight,
                 child: Stack(
                   children: [
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      top: 0,
-                      height: monthHeight,
-                      child: IgnorePointer(
-                        ignoring: !_monthOpen,
-                        child: AnimatedOpacity(
-                          duration: const Duration(milliseconds: 180),
-                          opacity: _monthOpen ? 1 : 0,
-                          child: _slideSwap(
-                            key: ValueKey(_viewMonth),
-                            direction: _monthDir,
-                            child: _buildMonth(accent, dates, weekRow),
-                          ),
+                    Positioned.fill(
+                      child: Offstage(
+                        offstage: !_monthOpen,
+                        child: PageView.builder(
+                          controller: _monthPages,
+                          itemCount: monthItemCount,
+                          onPageChanged: (page) {
+                            if (_monthOpen) {
+                              setState(() => _viewMonth = _monthAt(page));
+                            }
+                          },
+                          itemBuilder: (context, page) {
+                            final month = _monthAt(page);
+                            final firstLead =
+                                (DateTime(month.year, month.month, 1).weekday -
+                                        1) %
+                                    7;
+                            final count = ((firstLead +
+                                        DateTime(month.year, month.month + 1, 0)
+                                            .day +
+                                        6) ~/
+                                    7) *
+                                7;
+                            final first = DateTime(month.year, month.month, 1)
+                                .subtract(Duration(days: firstLead));
+                            return SingleChildScrollView(
+                              physics: const NeverScrollableScrollPhysics(),
+                              child: _buildMonth(accent, month, [
+                                for (var i = 0; i < count; i++)
+                                  first.add(Duration(days: i))
+                              ]),
+                            );
+                          },
                         ),
                       ),
                     ),
-                    AnimatedPositioned(
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeInOut,
-                      left: 0,
-                      right: 0,
-                      top: _monthOpen ? weekTop : 0,
-                      height: _weekHeight,
-                      child: AnimatedOpacity(
-                        duration: const Duration(milliseconds: 180),
-                        opacity: _monthOpen && weekRow < 0 ? 0 : 1,
-                        child: _slideSwap(
-                          key: ValueKey(_monday(_selected)),
-                          direction: _weekDir,
-                          child: _buildWeekRow(accent),
+                    Positioned.fill(
+                      child: Offstage(
+                        offstage: _monthOpen,
+                        child: PageView.builder(
+                          controller: _weekPages,
+                          itemCount: weekItemCount,
+                          onPageChanged: (page) {
+                            if (!_monthOpen) {
+                              hapticTick();
+                              setState(() => _viewMonday = _weekAt(page));
+                            }
+                          },
+                          itemBuilder: (context, page) =>
+                              _buildWeekRow(accent, _weekAt(page)),
                         ),
                       ),
                     ),
@@ -521,7 +619,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
             ),
             InkWell(
               key: const Key('calendar-handle'),
-              onTap: () => setState(() => _monthOpen = !_monthOpen),
+              onTap: _toggleMonth,
               child: Padding(
                 padding: const EdgeInsets.only(top: 12, bottom: 4),
                 child: Center(
@@ -542,34 +640,8 @@ class _DiaryScreenState extends State<DiaryScreen> {
     );
   }
 
-  /// Горизонтальная смена содержимого: старое уезжает вбок, новое выезжает.
-  Widget _slideSwap(
-      {required Key key, required int direction, required Widget child}) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 260),
-      switchInCurve: Curves.easeOutCubic,
-      switchOutCurve: Curves.easeOutCubic,
-      layoutBuilder: (current, previous) => Stack(
-        alignment: Alignment.topCenter,
-        children: [...previous, if (current != null) current],
-      ),
-      transitionBuilder: (w, anim) {
-        final incoming = w.key == key;
-        final dx = (incoming ? direction : -direction).toDouble();
-        return ClipRect(
-          child: SlideTransition(
-            position:
-                Tween(begin: Offset(dx, 0), end: Offset.zero).animate(anim),
-            child: w,
-          ),
-        );
-      },
-      child: child,
-    );
-  }
-
   /// Точки мышечных групп под числом даты: одна точка на группу.
-  Widget _dayDots(DateTime d, bool selected, {double dot = 5, double top = 3}) {
+  Widget _dayDots(DateTime d, bool selected, {double dot = 6, double top = 2}) {
     final groups = appState.dayMuscleGroups(d);
     if (groups.isEmpty) return SizedBox(height: top + dot);
     return Padding(
@@ -585,7 +657,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
                 height: dot,
                 margin: EdgeInsets.only(left: i == 0 ? 0 : 2),
                 decoration: BoxDecoration(
-                  color: selected ? Colors.black : muscleGroupColor(groups[i]),
+                  color: muscleGroupColor(groups[i]),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -595,8 +667,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
     );
   }
 
-  Widget _buildWeekRow(Color accent) {
-    final monday = _monday(_selected);
+  Widget _buildWeekRow(Color accent, DateTime monday) {
     return Row(
       children: [
         for (var i = 0; i < 7; i++)
@@ -649,8 +720,8 @@ class _DiaryScreenState extends State<DiaryScreen> {
     );
   }
 
-  Widget _buildMonth(Color accent, List<DateTime> dates, int weekRow) {
-    final y = _viewMonth.year, m = _viewMonth.month;
+  Widget _buildMonth(Color accent, DateTime month, List<DateTime> dates) {
+    final y = month.year, m = month.month;
     return Column(
       children: [
         SizedBox(
@@ -700,14 +771,13 @@ class _DiaryScreenState extends State<DiaryScreen> {
         ),
         for (var r = 0; r < dates.length ~/ 7; r++)
           SizedBox(
-            height: r == weekRow ? _weekHeight : _monthRowHeight,
-            child: r == weekRow
-                ? null
-                : Row(children: [
-                    for (var c = 0; c < 7; c++)
-                      Expanded(
-                          child: _monthCell(dates[r * 7 + c], accent: accent))
-                  ]),
+            height: _monthRowHeight,
+            child: Row(children: [
+              for (var c = 0; c < 7; c++)
+                Expanded(
+                    child: _monthCell(dates[r * 7 + c],
+                        month: month, accent: accent))
+            ]),
           ),
       ],
     );
@@ -727,13 +797,14 @@ class _DiaryScreenState extends State<DiaryScreen> {
     );
   }
 
-  Widget _monthCell(DateTime d, {required Color accent}) {
+  Widget _monthCell(DateTime d,
+      {required DateTime month, required Color accent}) {
     final sel = _dateOnly(d) == _selected;
     final today = _isToday(d);
     final monday = _monday(_selected);
     final inWeek = !_dateOnly(d).isBefore(monday) &&
         _dateOnly(d).isBefore(monday.add(const Duration(days: 7)));
-    final other = d.month != _viewMonth.month;
+    final other = d.month != month.month;
     return Padding(
       padding: const EdgeInsets.all(2),
       child: InkWell(
@@ -761,7 +832,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
                           : other
                               ? const Color(0xFF777777)
                               : AppColors.text)),
-              _dayDots(d, sel, dot: 4, top: 3),
+              _dayDots(d, sel, dot: 5, top: 2),
             ],
           ),
         ),
@@ -774,136 +845,140 @@ class _DiaryScreenState extends State<DiaryScreen> {
   Widget _buildEntryCard(DiaryEntry e, int index, Color accent,
       {required Key key}) {
     final c = appState.cycleById(e.cycleId);
-    return Container(
+    // Зажатие в любом месте карточки — перетаскивание для смены порядка.
+    return ReorderableDelayedDragStartListener(
       key: key,
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Stack(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(right: 26),
-                child: Row(
-                  children: [
-                    ReorderableDragStartListener(
-                      index: index,
-                      child: const Padding(
-                        padding: EdgeInsets.only(right: 8),
-                        child: _DragHandle(),
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(appState.exerciseName(e.exerciseId, e.name),
-                          style: const TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w700)),
-                    ),
-                    if (c != null && e.dayIdx != null)
-                      Text('день ${e.dayIdx! + 1}/${c.days.length}',
-                          style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: accent)),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              SetFlow(
-                sets: [
-                  for (final s in e.sets)
-                    SetBoxData(
-                      w: s.w,
-                      reps: s.reps,
-                      rir: s.rir,
-                      durationSec: s.durationSec,
-                      distanceM: s.distanceM,
-                      format: e.recordFormat,
-                      planned: s.planned,
-                    ),
-                ],
-                onSetTap: e.done ? null : (i) => _editSet(e, i),
-              ),
-              if (!e.done) ...[
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(12),
-                        onTap: () => _finish(e),
-                        child: Container(
-                          height: 45,
-                          decoration: BoxDecoration(
-                            color: AppColors.surface2,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.border),
-                          ),
-                          child: const Center(
-                            child: Text('Завершить',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.text)),
-                          ),
+      index: index,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          border: Border.all(color: AppColors.border),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Stack(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 26),
+                  child: Row(
+                    children: [
+                      ReorderableDragStartListener(
+                        index: index,
+                        child: const Padding(
+                          padding: EdgeInsets.only(right: 8),
+                          child: _DragHandle(),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(12),
-                        onTap: () => _addSet(e),
-                        child: DashedBorder(
-                          color: AppColors.border,
+                      Expanded(
+                        child: Text(appState.exerciseName(e.exerciseId, e.name),
+                            style: const TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.w700)),
+                      ),
+                      if (c != null && e.dayIdx != null)
+                        Text('день ${e.dayIdx! + 1}/${c.days.length}',
+                            style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: accent)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SetFlow(
+                  sets: [
+                    for (final s in e.sets)
+                      SetBoxData(
+                        w: s.w,
+                        reps: s.reps,
+                        rir: s.rir,
+                        durationSec: s.durationSec,
+                        distanceM: s.distanceM,
+                        format: e.recordFormat,
+                        planned: s.planned,
+                      ),
+                  ],
+                  onSetTap: e.done ? null : (i) => _editSet(e, i),
+                ),
+                if (!e.done) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () => _finish(e),
                           child: Container(
                             height: 45,
                             decoration: BoxDecoration(
                               color: AppColors.surface2,
                               borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppColors.border),
                             ),
-                            child: Center(
-                              child: Text('+ Подход',
+                            child: const Center(
+                              child: Text('Завершить',
                                   style: TextStyle(
                                       fontWeight: FontWeight.w700,
-                                      color: accent)),
+                                      color: AppColors.text)),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
-            ],
-          ),
-          Positioned(
-            top: -2,
-            right: -2,
-            child: e.done
-                ? InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () => appState.undoFinish(e),
-                    child: const Padding(
-                      padding: EdgeInsets.all(2),
-                      child: Icon(Icons.settings_outlined,
-                          size: 18, color: Color(0xFF777777)),
-                    ),
-                  )
-                : InkWell(
-                    borderRadius: BorderRadius.circular(11),
-                    onTap: () => _confirmDelete(e),
-                    child: const Padding(
-                      padding: EdgeInsets.all(2),
-                      child: CloseBadge(size: 20),
-                    ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () => _addSet(e),
+                          child: DashedBorder(
+                            color: AppColors.border,
+                            child: Container(
+                              height: 45,
+                              decoration: BoxDecoration(
+                                color: AppColors.surface2,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Center(
+                                child: Text('+ Подход',
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        color: accent)),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-          ),
-        ],
+                ],
+              ],
+            ),
+            Positioned(
+              top: -2,
+              right: -2,
+              child: e.done
+                  ? InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () => appState.undoFinish(e),
+                      child: const Padding(
+                        padding: EdgeInsets.all(2),
+                        child: Icon(Icons.settings_outlined,
+                            size: 18, color: Color(0xFF777777)),
+                      ),
+                    )
+                  : InkWell(
+                      borderRadius: BorderRadius.circular(11),
+                      onTap: () => _confirmDelete(e),
+                      child: const Padding(
+                        padding: EdgeInsets.all(2),
+                        child: CloseBadge(size: 20),
+                      ),
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -933,18 +1008,21 @@ class _DragHandle extends StatelessWidget {
 }
 
 /// Расчётный максимум прокручивается к новому значению и пульсирует.
-class _CelebrateAnim extends StatefulWidget {
+class CelebrateAnim extends StatefulWidget {
   final double oldTm;
   final double step;
   final VoidCallback onReady;
-  const _CelebrateAnim(
-      {required this.oldTm, required this.step, required this.onReady});
+  const CelebrateAnim(
+      {super.key,
+      required this.oldTm,
+      required this.step,
+      required this.onReady});
 
   @override
-  State<_CelebrateAnim> createState() => _CelebrateAnimState();
+  State<CelebrateAnim> createState() => _CelebrateAnimState();
 }
 
-class _CelebrateAnimState extends State<_CelebrateAnim>
+class _CelebrateAnimState extends State<CelebrateAnim>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl = AnimationController(
       vsync: this, duration: const Duration(milliseconds: 2500))
@@ -959,14 +1037,40 @@ class _CelebrateAnimState extends State<_CelebrateAnim>
 
   bool _isDigit(String ch) => ch.length == 1 && '0123456789'.contains(ch);
 
+  /// Ширина символа: у цифр единая, у остальных — по измерению.
+  double _charW(String ch, TextStyle style, double digitW) {
+    if (_isDigit(ch)) return digitW;
+    final tp = TextPainter(
+        text: TextSpan(text: ch, style: style),
+        textDirection: TextDirection.ltr)
+      ..layout();
+    return tp.width;
+  }
+
   @override
   Widget build(BuildContext context) {
     final style = TextStyle(
         fontSize: 22, fontWeight: FontWeight.w800, color: appState.accent);
-    final oldStr = fmtW(appState.weightFromKg(widget.oldTm));
-    final newStr = fmtW(appState.weightFromKg(widget.oldTm + widget.step));
-    final oldPadded = oldStr.padLeft(newStr.length);
-    final newPadded = newStr.padLeft(oldStr.length);
+    // Сначала выравниваем дробную часть, затем целую. У каждого разряда
+    // остаётся собственная колонка: 122,5 → 125,0 и 125,0 → 127,5.
+    final oldRaw = fmtW(appState.weightFromKg(widget.oldTm));
+    final newRaw = fmtW(appState.weightFromKg(widget.oldTm + widget.step));
+    final oldParts = oldRaw.split(',');
+    final newParts = newRaw.split(',');
+    final decimals = (oldParts.length > 1 ? oldParts[1].length : 0) >
+            (newParts.length > 1 ? newParts[1].length : 0)
+        ? (oldParts.length > 1 ? oldParts[1].length : 0)
+        : (newParts.length > 1 ? newParts[1].length : 0);
+    String withDecimals(List<String> parts) => decimals == 0
+        ? parts[0]
+        : '${parts[0]},${(parts.length > 1 ? parts[1] : '').padRight(decimals, '0')}';
+    final oldDecimal = withDecimals(oldParts);
+    final newDecimal = withDecimals(newParts);
+    final width = oldDecimal.length > newDecimal.length
+        ? oldDecimal.length
+        : newDecimal.length;
+    final oldPadded = oldDecimal.padLeft(width);
+    final newPadded = newDecimal.padLeft(width);
 
     // Единая ширина цифры и высота строки для барабанов.
     final measure = TextPainter(
@@ -1013,13 +1117,17 @@ class _CelebrateAnimState extends State<_CelebrateAnim>
           scale: scale,
           child: SizedBox(
             height: lineH + 4,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ...cells,
-                Text(' ${appState.weightLabel}', style: style),
-              ],
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('🔥 ', style: TextStyle(fontSize: 20)),
+                  ...cells,
+                  Text(' ${appState.weightLabel}', style: style),
+                ],
+              ),
             ),
           ),
         );
@@ -1027,11 +1135,9 @@ class _CelebrateAnimState extends State<_CelebrateAnim>
     );
   }
 
-  Widget _staticCell(
-      String ch, TextStyle style, double digitW, double lineH) {
-    final w = _isDigit(ch) ? digitW : null;
+  Widget _staticCell(String ch, TextStyle style, double digitW, double lineH) {
     return SizedBox(
-      width: w,
+      width: _charW(ch, style, digitW),
       height: lineH,
       child: Text(ch, style: style, textAlign: TextAlign.center),
     );
@@ -1065,11 +1171,11 @@ class _CelebrateAnimState extends State<_CelebrateAnim>
   }
 
   /// Нечисловой символ (запятая, новый разряд): мягкая смена сверху вниз.
-  Widget _swapCell(String oldCh, String newCh, double progress,
-      TextStyle style, double digitW, double lineH) {
-    final w = _isDigit(newCh) ? digitW : null;
+  /// Ширина обязательна: Stack только с Positioned-детьми иначе растянется.
+  Widget _swapCell(String oldCh, String newCh, double progress, TextStyle style,
+      double digitW, double lineH) {
     return SizedBox(
-      width: w,
+      width: _charW(newCh, style, digitW),
       height: lineH,
       child: ClipRect(
         child: Stack(

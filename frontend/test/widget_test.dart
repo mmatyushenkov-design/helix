@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:workout_tracker_frontend/main.dart';
 import 'package:workout_tracker_frontend/models/models.dart';
+import 'package:workout_tracker_frontend/screens/diary_screen.dart';
 import 'package:workout_tracker_frontend/screens/stats_screen.dart';
 import 'package:workout_tracker_frontend/state/app_state.dart';
 import 'package:workout_tracker_frontend/widgets/set_box.dart';
@@ -63,11 +64,14 @@ void main() {
     await tester.pumpAndSettle();
     expect(appState.weightUnit, WeightUnit.lb);
 
+    // Мили отключены: в списке единиц дистанции только километры.
     await tester.tap(find.byType(DropdownButton<DistanceUnit>));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('ml').last);
+    expect(find.text('ml'), findsNothing);
+    expect(find.text('mi'), findsNothing);
+    await tester.tap(find.text('km').last);
     await tester.pumpAndSettle();
-    expect(appState.distanceUnit, DistanceUnit.mi);
+    expect(appState.distanceUnit, DistanceUnit.km);
   });
 
   testWidgets('Выбор упражнения: группы, поиск и создание через плюс',
@@ -327,5 +331,59 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     expect(find.text('за всё время'), findsWidgets);
+  });
+
+  testWidgets('Анимация конца цикла: дробный вес, огонёк и единицы',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 780);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: SizedBox(
+            width: 260,
+            child: CelebrateAnim(oldTm: 120, step: 2.5, onReady: () {}),
+          ),
+        ),
+      ),
+    ));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 3));
+    // 120 → 122,5 кг: все символы на месте, включая запятую и дробную часть.
+    expect(find.text(','), findsOneWidget);
+    expect(find.text('5'), findsOneWidget);
+    expect(find.text(' кг'), findsOneWidget);
+    expect(find.text('🔥 '), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Анимация заранее дополняет целый вес дробным нулём',
+      (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body:
+            Center(child: CelebrateAnim(oldTm: 125, step: 2.5, onReady: () {})),
+      ),
+    ));
+    await tester.pump();
+    // 125 → 127,5: старое значение сразу занимает те же разряды — 125,0.
+    expect(find.text('0'), findsOneWidget);
+    expect(find.text(','), findsOneWidget);
+    await tester.pump(const Duration(seconds: 3));
+    expect(find.text('5'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Свайп недели не меняет выбранный день', (tester) async {
+    await tester.pumpWidget(const WorkoutTrackerApp());
+    await tester.tap(find.text('Дневник'));
+    await tester.pumpAndSettle();
+    final title = find.text('Тренировка — сегодня');
+    expect(title, findsOneWidget);
+    await tester.drag(find.byKey(const Key('calendar')), const Offset(-320, 0));
+    await tester.pumpAndSettle();
+    expect(title, findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

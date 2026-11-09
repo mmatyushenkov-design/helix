@@ -22,7 +22,7 @@ class _CycleCardState extends State<CycleCard>
     with SingleTickerProviderStateMixin {
   static const double chipH = 34;
   static const double chipGap = 6;
-  static const double panelGap = 12; // зазор между рядом чипов и панелью
+  static const double panelGap = 8; // зазор между рядом чипов и панелью
 
   late int _sel = widget.cycle.curDay.clamp(0, widget.cycle.days.length - 1);
   late int _prev = _sel;
@@ -66,21 +66,39 @@ class _CycleCardState extends State<CycleCard>
           title: Text('Вы уверены, что хотите начать день ${_sel + 1}?'),
           content: Text('Текущий день цикла — ${c.curDay + 1}'),
           actions: [
-            TextButton(
-              key: const Key('future-day-yes'),
-              onPressed: () => Navigator.pop(ctx, true),
-              style: TextButton.styleFrom(
-                  foregroundColor: AppColors.text,
-                  backgroundColor: AppColors.surface2),
-              child: const Text('Да'),
-            ),
-            FilledButton(
-              key: const Key('future-day-no'),
-              onPressed: () => Navigator.pop(ctx, false),
-              style: FilledButton.styleFrom(
-                  backgroundColor: widget.accent,
-                  foregroundColor: Colors.black),
-              child: const Text('Нет'),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    key: const Key('future-day-no'),
+                    onPressed: () => Navigator.pop(ctx, false),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.text,
+                      side: const BorderSide(color: AppColors.border),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Нет'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton(
+                    key: const Key('future-day-yes'),
+                    onPressed: () => Navigator.pop(ctx, true),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFD06060),
+                      side: const BorderSide(
+                          color: Color(0xFFA03030), width: 1.5),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Да'),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

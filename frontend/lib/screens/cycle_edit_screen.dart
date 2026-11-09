@@ -82,104 +82,109 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
           ],
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-        children: [
-          _parameter(
-            label: 'Расчётный разовый максимум',
-            help:
-                'Расчётный максимум — максимальный вес в этом упражнении на одно повторение, использующийся для расчёта подходов цикла (чем меньше повторений в подходе, используемом для расчёта — тем точнее вычисление).',
-            onTap: _editTm,
-            child: Text.rich(
-              TextSpan(children: [
-                TextSpan(text: fmtW(appState.weightFromKg(c.tm))),
-                TextSpan(
-                    text: ' ${appState.weightLabel}',
-                    style: const TextStyle(
-                        fontSize: 12, color: AppColors.textDim)),
-              ]),
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+      body: SafeArea(
+        top: false,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+          children: [
+            _parameter(
+              label: 'Расчётный разовый максимум',
+              help:
+                  'Расчётный максимум — максимальный вес в этом упражнении на одно повторение, использующийся для расчёта подходов цикла (чем меньше повторений в подходе, используемом для расчёта — тем точнее вычисление).',
+              onTap: _editTm,
+              child: Text.rich(
+                TextSpan(children: [
+                  TextSpan(text: fmtW(appState.weightFromKg(c.tm))),
+                  TextSpan(
+                      text: ' ${appState.weightLabel}',
+                      style: const TextStyle(
+                          fontSize: 12, color: AppColors.textDim)),
+                ]),
+                style:
+                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          _parameter(
-            label: 'Минимальный шаг прогресса',
-            help:
-                'Минимальный шаг прогресса — вес, который прибавится к каждому подходу цикла и расчётному разовому максимуму после полного прохождения цикла. (Рекомендуется выставлять шаг меньше в упражнениях на маленькие мышечные группы (плечи, руки), и больше в упражнениях на большие мышечные группы).',
-            child: DropdownButton<double>(
-              value: c.step,
-              isExpanded: true,
-              underline: const SizedBox.shrink(),
-              dropdownColor: AppColors.surface2,
-              style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.text),
-              items: [
-                for (final step in stepOptions)
-                  DropdownMenuItem(
-                      value: step,
-                      child: Text(
-                          '${fmtW(appState.weightFromKg(step))} ${appState.weightLabel}')),
-              ],
-              onChanged: (v) => _mutate(() => c.step = v ?? c.step),
+            const SizedBox(height: 12),
+            _parameter(
+              label: 'Минимальный шаг прогресса',
+              help:
+                  'Минимальный шаг прогресса — вес, который прибавится к каждому подходу цикла и расчётному разовому максимуму после полного прохождения цикла. (Рекомендуется выставлять шаг меньше в упражнениях на маленькие мышечные группы (плечи, руки), и больше в упражнениях на большие мышечные группы).',
+              child: DropdownButton<double>(
+                value: c.step,
+                isExpanded: true,
+                underline: const SizedBox.shrink(),
+                dropdownColor: AppColors.surface2,
+                style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.text),
+                items: [
+                  for (final step in stepOptions)
+                    DropdownMenuItem(
+                        value: step,
+                        child: Text(
+                            '${fmtW(appState.weightFromKg(step))} ${appState.weightLabel}')),
+                ],
+                onChanged: (v) => _mutate(() => c.step = v ?? c.step),
+              ),
             ),
-          ),
-          const SizedBox(height: 10),
-          const Text('Нажми на подход, чтобы изменить вес, процент или RIR',
-              style: TextStyle(fontSize: 12, color: AppColors.textDim)),
-          const SizedBox(height: 14),
-          for (var i = 0; i < c.days.length; i++) _dayCard(i),
-          const SizedBox(height: 4),
-          // добавить день
-          InkWell(
-            borderRadius: BorderRadius.circular(14),
-            onTap: c.days.length >= 12
-                ? null
-                : () => _mutate(() => c.days.add(CycleDay([
-                      CycleSet(pct: 60, reps: 5, rir: 3),
-                      CycleSet(pct: 65, reps: 5, rir: 2),
-                      CycleSet(pct: 70, reps: 5, rir: 2),
-                    ]))),
-            child: DashedBorder(
-              color: AppColors.border,
-              radius: 14,
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Center(
-                  child: Text('+ Добавить день',
-                      style: TextStyle(fontSize: 14, color: AppColors.textDim)),
+            const SizedBox(height: 10),
+            const Text('Нажми на подход, чтобы изменить вес, процент или RIR',
+                style: TextStyle(fontSize: 12, color: AppColors.textDim)),
+            const SizedBox(height: 14),
+            for (var i = 0; i < c.days.length; i++) _dayCard(i),
+            const SizedBox(height: 4),
+            // добавить день
+            InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: c.days.length >= 12
+                  ? null
+                  : () => _mutate(() => c.days.add(CycleDay([
+                        CycleSet(pct: 60, reps: 5, rir: 3),
+                        CycleSet(pct: 65, reps: 5, rir: 2),
+                        CycleSet(pct: 70, reps: 5, rir: 2),
+                      ]))),
+              child: DashedBorder(
+                color: AppColors.border,
+                radius: 14,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Center(
+                    child: Text('+ Добавить день',
+                        style:
+                            TextStyle(fontSize: 14, color: AppColors.textDim)),
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 14),
-          // удалить цикл
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: () async {
-                if (await _confirm('Удалить цикл «${c.name}»?')) {
-                  appState.deleteCycle(c);
-                  if (context.mounted) Navigator.pop(context);
-                }
-              },
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFFD06060),
-                side: const BorderSide(color: Color(0xFFA03030), width: 1.5),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(vertical: 14),
+            const SizedBox(height: 14),
+            // удалить цикл
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () async {
+                  if (await _confirm('Удалить цикл «${c.name}»?')) {
+                    appState.deleteCycle(c);
+                    if (context.mounted) Navigator.pop(context);
+                  }
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFFD06060),
+                  side: const BorderSide(color: Color(0xFFA03030), width: 1.5),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                child: const Text('Удалить цикл'),
               ),
-              child: const Text('Удалить цикл'),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

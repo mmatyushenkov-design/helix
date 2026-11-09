@@ -22,14 +22,14 @@ class AppColors {
 
 /// Цвета мышечных групп для точек календаря и пометок.
 const muscleGroupColors = <String, Color>{
-  'chest': Color(0xFFC9504C),
-  'arms': Color(0xFFD98A3D),
-  'back': Color(0xFF4D9FD1),
-  'legs': Color(0xFF3FBF7F),
-  'shoulders': Color(0xFF9C6BC0),
-  'core': Color(0xFFC9A227),
-  'full_body': Color(0xFF3D9C80),
-  'cardio': Color(0xFF4FA3D1),
+  'chest': Color(0xFFFF4D5E),
+  'arms': Color(0xFFFF9F1C),
+  'back': Color(0xFF29B6FF),
+  'legs': Color(0xFF39FF88),
+  'shoulders': Color(0xFFC77DFF),
+  'core': Color(0xFFFFE600),
+  'full_body': Color(0xFF00FFC8),
+  'cardio': Color(0xFF00E5FF),
 };
 
 Color muscleGroupColor(String code) =>

@@ -42,7 +42,9 @@ enum RecordFormat {
       this == RecordFormat.weightReps || this == RecordFormat.timeReps;
   bool get usesTime => this != RecordFormat.weightReps;
   bool get usesDistance => this == RecordFormat.timeDistance;
-  bool get usesRir => this != RecordFormat.timeDistance;
+  // RIR только у повторений: вес+повторения и время+повторения.
+  bool get usesRir =>
+      this == RecordFormat.weightReps || this == RecordFormat.timeReps;
 }
 
 enum WeightUnit { kg, lb }
@@ -88,6 +90,26 @@ String fmtDuration(int seconds) {
     return '$h:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
   return '$m:${s.toString().padLeft(2, '0')}';
+}
+
+/// Длительность с единицей измерения для крупного показателя подхода.
+String fmtDurationUnit(int seconds) {
+  if (seconds < 60) return '$seconds с';
+  if (seconds < 3600) {
+    return '${seconds ~/ 60}:${(seconds % 60).toString().padLeft(2, '0')} мин';
+  }
+  final h = seconds ~/ 3600;
+  final m = (seconds % 3600) ~/ 60;
+  final s = seconds % 60;
+  return '$h:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')} ч';
+}
+
+/// Дистанция: до 999 м — в метрах, дальше — километры с двумя знаками.
+String fmtDistanceMeters(double meters) {
+  if (meters > 999) {
+    return '${(meters / 1000).toStringAsFixed(2).replaceAll('.', ',')} км';
+  }
+  return '${meters.round()} м';
 }
 
 String dkey(DateTime d) =>

@@ -47,8 +47,10 @@ class LocalBackupService {
   Future<String> createExportZip(Map<String, dynamic> snapshot) async {
     final now = DateTime.now();
     String two(int v) => v.toString().padLeft(2, '0');
-    final stamp = '${now.year}-${two(now.month)}-${two(now.day)}-'
-        '${two(now.hour)}-${two(now.minute)}-${two(now.second)}';
+    // '/' в имени файла невозможен (разделитель путей) — дата через точки,
+    // время через двоеточия, как привычно: Workout-Save-2026.11.08-23:49:00
+    final stamp = '${now.year}.${two(now.month)}.${two(now.day)}-'
+        '${two(now.hour)}:${two(now.minute)}:${two(now.second)}';
     final name = 'Workout-Save-$stamp';
     final data = utf8.encode(jsonEncode(snapshot));
     final archive = Archive()

@@ -97,8 +97,11 @@ class SettingsScreen extends StatelessWidget {
             ),
             _row(
               tr('language'),
-              trailing: DropdownButton<String>(
+              trailing: SizedBox(
+                height: 26,
+                child: DropdownButton<String>(
                 value: appState.language,
+                isDense: true,
                 underline: const SizedBox.shrink(),
                 dropdownColor: AppColors.surface2,
                 items: const [
@@ -109,14 +112,18 @@ class SettingsScreen extends StatelessWidget {
                   hapticTick();
                   appState.setLanguage(v ?? 'ru');
                 },
+                ),
               ),
             ),
           ]),
           _group(tr('training'), [
             _row(
               tr('weightUnits'),
-              trailing: DropdownButton<WeightUnit>(
+              trailing: SizedBox(
+                height: 26,
+                child: DropdownButton<WeightUnit>(
                 value: appState.weightUnit,
+                isDense: true,
                 underline: const SizedBox.shrink(),
                 dropdownColor: AppColors.surface2,
                 items: [
@@ -131,12 +138,18 @@ class SettingsScreen extends StatelessWidget {
                   hapticTick();
                   appState.setWeightUnit(v ?? WeightUnit.kg);
                 },
+                ),
               ),
             ),
             _row(
               tr('distanceUnits'),
-              trailing: DropdownButton<DistanceUnit>(
-                value: appState.distanceUnit,
+              trailing: SizedBox(
+                height: 26,
+                child: DropdownButton<DistanceUnit>(
+                value: appState.distanceUnit == DistanceUnit.mi
+                    ? DistanceUnit.km
+                    : appState.distanceUnit,
+                isDense: true,
                 underline: const SizedBox.shrink(),
                 dropdownColor: AppColors.surface2,
                 items: [
@@ -144,15 +157,13 @@ class SettingsScreen extends StatelessWidget {
                       value: DistanceUnit.km,
                       child: Text(distanceUnitLabel(
                           DistanceUnit.km, appState.language))),
-                  DropdownMenuItem(
-                      value: DistanceUnit.mi,
-                      child: Text(distanceUnitLabel(
-                          DistanceUnit.mi, appState.language))),
+                  // Мили временно отключены: учёт дистанции только в метрах/км.
                 ],
                 onChanged: (v) {
                   hapticTick();
                   appState.setDistanceUnit(v ?? DistanceUnit.km);
                 },
+                ),
               ),
             ),
           ]),
@@ -172,7 +183,7 @@ class SettingsScreen extends StatelessWidget {
             ),
           ]),
           _group(tr('about'),
-              [_row(tr('version'), trailing: const _Val('beta-0.4.1'))]),
+              [_row(tr('version'), trailing: const _Val('beta-0.4.2'))]),
         ],
       ),
     );

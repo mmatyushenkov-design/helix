@@ -109,7 +109,30 @@ class SetBox extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SetValueText(data: data, compact: compact),
+          if (data.format == RecordFormat.weightTime ||
+              data.format == RecordFormat.timeDistance) ...[
+            // Время сверху, второй показатель под ним — оба крупно, с единицами.
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(fmtDurationUnit(data.durationSec),
+                  maxLines: 1,
+                  style: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w700)),
+            ),
+            const SizedBox(height: 3),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                data.format == RecordFormat.weightTime
+                    ? '${fmtW(appState.weightFromKg(data.w))} ${appState.weightLabel}'
+                    : fmtDistanceMeters(data.distanceM),
+                maxLines: 1,
+                style:
+                    const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ] else
+            SetValueText(data: data, compact: compact),
           if (data.pct != null)
             Padding(
               padding: const EdgeInsets.only(top: 1),
