@@ -156,7 +156,7 @@ class _CycleCardState extends State<CycleCard>
                       onTap: () => _openEditor(context),
                       child: FlameLabel(
                           text:
-                              '${fmtW(appState.weightFromKg(c.bestW))}×${c.bestR} | ${fmtW(appState.weightFromKg(c.tm))} ${appState.weightLabel}'),
+                              '${fmtW(appState.weightFromKg(c.tm))} ${appState.weightLabel} | ${fmtW(appState.weightFromKg(c.bestW))}×${c.bestR}'),
                     ),
                   ],
                 ),

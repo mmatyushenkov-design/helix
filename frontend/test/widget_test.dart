@@ -203,11 +203,49 @@ void main() {
       await tester.pumpAndSettle();
 
       final set = result!.set!;
-      expect(set.w, format.usesWeight ? 120.0 : isNull);
+      expect(set.w, format.usesWeight ? 0.0 : isNull);
       expect(set.reps, format.usesReps ? 4 : 0);
       expect(set.durationSec, format.usesTime ? 60 : 0);
       expect(set.distanceM, format.usesDistance ? 5000.0 : 0);
     }
+  });
+
+  testWidgets('Клавиши сначала сворачиваются, затем сохраняется подход',
+      (tester) async {
+    SetSheetResult? result;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: Builder(
+          builder: (context) => FilledButton(
+            onPressed: () async {
+              result = await showSetSheet(context, mode: SetSheetMode.newSet);
+            },
+            child: const Text('Открыть'),
+          ),
+        ),
+      ),
+    ));
+    await tester.tap(find.text('Открыть'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('0 кг', findRichText: true));
+    await tester.pumpAndSettle();
+    expect(find.text('Сохранить'), findsOneWidget);
+    expect(find.text('Сохранить подход'), findsNothing);
+
+    await tester.tap(find.text('7'));
+    await tester.pump();
+    await tester.ensureVisible(find.text('Сохранить'));
+    await tester.pump();
+    await tester.tap(find.text('Сохранить'));
+    await tester.pumpAndSettle();
+    expect(result, isNull);
+    expect(find.text('Новый подход'), findsOneWidget);
+    expect(find.textContaining('7 кг', findRichText: true), findsOneWidget);
+    expect(find.text('Сохранить подход'), findsOneWidget);
+
+    await tester.tap(find.text('Сохранить подход'));
+    await tester.pumpAndSettle();
+    expect(result?.set?.w, 7);
   });
 
   testWidgets('Упражнение перетаскивается долгим нажатием', (tester) async {

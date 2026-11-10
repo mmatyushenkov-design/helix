@@ -272,7 +272,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
         durationSec: value.durationSec,
         distanceM: value.distanceM,
       );
-      appState.touch();
+      appState.recordSavedSet(e, e.sets[i]);
     }
   }
 
@@ -290,7 +290,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
         durationSec: value.durationSec,
         distanceM: value.distanceM,
       ));
-      appState.touch();
+      appState.recordSavedSet(e, e.sets.last);
     }
   }
 

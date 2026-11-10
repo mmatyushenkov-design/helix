@@ -79,7 +79,7 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
             FlameLabel(
                 text: c.tm <= 0
                     ? '? | ? ${appState.weightLabel}'
-                    : '${fmtW(appState.weightFromKg(c.bestW))}×${c.bestR} | ${fmtW(appState.weightFromKg(c.tm))} ${appState.weightLabel}'),
+                    : '${fmtW(appState.weightFromKg(c.tm))} ${appState.weightLabel} | ${fmtW(appState.weightFromKg(c.bestW))}×${c.bestR}'),
           ],
         ),
       ),

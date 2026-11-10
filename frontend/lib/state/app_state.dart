@@ -304,6 +304,28 @@ class AppState extends ChangeNotifier {
         distanceM: previousSet.distanceM);
   }
 
+  /// Последний сохранённый подход показывается рядом с расчётным максимумом.
+  /// Сам расчётный максимум и веса цикла при этом не пересчитываются.
+  void recordSavedSet(DiaryEntry entry, DiarySet set) {
+    if (entry.recordFormat == RecordFormat.weightReps && !set.planned) {
+      Cycle? cycle = cycleById(entry.cycleId);
+      if (cycle == null) {
+        for (final candidate in cycles) {
+          if (candidate.exerciseId == entry.exerciseId ||
+              (entry.exerciseId.isEmpty && candidate.name == entry.name)) {
+            cycle = candidate;
+            break;
+          }
+        }
+      }
+      if (cycle != null) {
+        cycle.bestW = set.w;
+        cycle.bestR = set.reps;
+      }
+    }
+    notifyListeners();
+  }
+
   /// Мышечные группы, задействованные в записи дня (по основным мышцам).
   Set<String> entryMuscleGroups(DiaryEntry entry) {
     final exercise =
@@ -472,7 +494,7 @@ class AppState extends ChangeNotifier {
   }
 
   Map<String, dynamic> toJson() => {
-        'schemaVersion': 2,
+        'schemaVersion': 3,
         'exercises': [for (final e in exercises) e.toJson()],
         'cycles': [for (final c in cycles) c.toJson()],
         'templates': [for (final t in templates) t.toJson()],
@@ -525,6 +547,17 @@ class AppState extends ChangeNotifier {
     }
     for (final exercise in defaults) {
       if (!exercises.any((e) => e.id == exercise.id)) exercises.add(exercise);
+    }
+    // Одноразовая миграция порядка: становая открывает раздел ног.
+    if ((j['schemaVersion'] as int? ?? 0) < 3) {
+      final deadlift = exerciseByName('Становая тяга');
+      if (deadlift != null) {
+        final oldIndex = exercises.indexOf(deadlift);
+        exercises.removeAt(oldIndex);
+        final firstLeg = exercises.indexWhere(
+            (exercise) => exercise.primaryMuscles.contains('quads'));
+        exercises.insert(firstLeg < 0 ? oldIndex : firstLeg, deadlift);
+      }
     }
 
     cycles

@@ -14,7 +14,14 @@ void main() {
     expect(exercises, hasLength(179));
     expect(exercises.map((e) => e.nameRu).toSet(), hasLength(179));
     expect(muscleCatalog.map((g) => g.code), [
-      'chest', 'back', 'shoulders', 'arms', 'legs', 'core', 'cardio', 'full_body'
+      'chest',
+      'back',
+      'shoulders',
+      'arms',
+      'legs',
+      'core',
+      'cardio',
+      'full_body'
     ]);
     expect(exercises.first.nameRu, 'Жим лёжа');
     expect(exercises.last.nameRu, 'выход силой на перекладине');
@@ -31,10 +38,17 @@ void main() {
     expect(byName('Вис на турнике').primaryMuscles, ['biceps']);
     expect(byName('Приседания').primaryMuscles, ['quads']);
     expect(byName('Приседания').defaultStepKg, 5);
-    expect(exercises.indexOf(byName('Приседания')),
-        greaterThan(exercises.indexOf(byName('Ягодичный мостик на одной ноге'))));
+    final firstLeg = exercises
+        .indexWhere((exercise) => exercise.primaryMuscles.contains('quads'));
+    expect(exercises[firstLeg].nameRu, 'Становая тяга');
+    expect(
+        exercises.indexOf(byName('Приседания')),
+        greaterThan(
+            exercises.indexOf(byName('Ягодичный мостик на одной ноге'))));
     expect(exercises.any((e) => e.nameRu == 'Армейский жим'), isFalse);
-    expect(exercises.every((e) => e.canUseInCycle == (e.format == RecordFormat.weightReps)),
+    expect(
+        exercises.every(
+            (e) => e.canUseInCycle == (e.format == RecordFormat.weightReps)),
         isTrue);
     expect(byName('Жим гантелей лежа').defaultStepKg, 2);
     expect(byName('Жим лёжа').defaultStepKg, 2.5);

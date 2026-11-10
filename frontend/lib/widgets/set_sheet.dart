@@ -124,7 +124,7 @@ class _SetSheetState extends State<_SetSheet> {
       _distBuf = fmtW(appState.distanceFromMeters(s.distanceM));
       _rirIdx = s.rir.clamp(0, 6);
     } else {
-      _wBuf = '120';
+      _wBuf = '0';
       _rBuf = '4';
       _pctBuf = '75';
       _distBuf = '5';
@@ -221,6 +221,14 @@ class _SetSheetState extends State<_SetSheet> {
     final estimated = epley(appState.weightToKg(_num(_wBuf)), reps);
     return roundDownToStep(
         estimated * (1 - reps / 100), widget.cycle?.step ?? 2.5);
+  }
+
+  void _dismissKeypad() {
+    hapticTick();
+    setState(() {
+      _target = null;
+      _freshFields.clear();
+    });
   }
 
   void _save() {
@@ -442,7 +450,7 @@ class _SetSheetState extends State<_SetSheet> {
                   Expanded(
                     flex: 2,
                     child: FilledButton(
-                      onPressed: _save,
+                      onPressed: keypadOpen && !_isTm ? _dismissKeypad : _save,
                       style: FilledButton.styleFrom(
                         backgroundColor: accent,
                         foregroundColor: Colors.black,
@@ -450,7 +458,10 @@ class _SetSheetState extends State<_SetSheet> {
                             borderRadius: BorderRadius.circular(12)),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      child: Text(_isTm ? 'Применить' : 'Сохранить подход',
+                      child: Text(
+                          _isTm
+                              ? 'Применить'
+                              : (keypadOpen ? 'Сохранить' : 'Сохранить подход'),
                           style: const TextStyle(fontWeight: FontWeight.w700)),
                     ),
                   ),

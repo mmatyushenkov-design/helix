@@ -100,6 +100,21 @@ void main() {
     expect(state.suggestedSet(current, 2, currentDate)?.reps, 7);
   });
 
+  test('Сохранённый подход цикла обновляется без пересчёта максимума', () {
+    final state = AppState()..initializeDefaults();
+    final cycle = state.addCycle('Жим лёжа')..tm = 130;
+    final entry = state.addEntry(DateTime(2026, 1, 20), 'Жим лёжа',
+        exerciseId: cycle.exerciseId);
+
+    state.recordSavedSet(entry, DiarySet(w: 97.5, reps: 4, rir: 2));
+
+    expect(cycle.bestW, 97.5);
+    expect(cycle.bestR, 4);
+    expect(cycle.tm, 130);
+    expect(cycle.days[2].sets.map((s) => setWeight(cycle, s)),
+        [97.5, 110.0, 122.5]);
+  });
+
   test('RIR рассчитывается из веса, повторений и расчётного максимума', () {
     expect(calculateRir(trainingMax: 130, weight: 100, reps: 5), 5);
     expect(calculateRir(trainingMax: 130, weight: 130, reps: 1), 0);
