@@ -35,13 +35,11 @@ class AppState extends ChangeNotifier {
   /// Демонстрационные данные для тестов и отдельных сценариев разработки.
   void seed() {
     initializeDefaults();
-    // Прежние названия нужны только демонстрационным сценариям тестов.
+    // Дополнительные названия нужны только демонстрационным сценариям тестов.
     exercises.insertAll(0, [
-      Exercise(nameRu: 'Приседания', primaryMuscles: ['quads']),
-      Exercise(nameRu: 'Жим лёжа', primaryMuscles: ['mid_chest']),
-      Exercise(nameRu: 'Становая тяга', primaryMuscles: ['lower_back']),
-      Exercise(nameRu: 'Жим стоя', primaryMuscles: ['front_delts']),
-      Exercise(nameRu: 'Подтягивания', primaryMuscles: ['lats']),
+      Exercise(nameRu: 'Приседания', primaryMuscles: ['quads'], isCustom: true),
+      Exercise(
+          nameRu: 'Подтягивания', primaryMuscles: ['lats'], isCustom: true),
       Exercise(nameRu: 'Бицепс со штангой', primaryMuscles: ['biceps']),
       Exercise(
           nameRu: 'Бег',
@@ -235,11 +233,11 @@ class AppState extends ChangeNotifier {
     final c = Cycle(
       exerciseId: exercise.id,
       name: exercise.nameRu,
-      bestW: 100,
-      bestR: 5,
-      tm: calcTM(100, 5),
+      bestW: 0,
+      bestR: 0,
+      tm: 0,
       step: exercise.defaultStepKg,
-      days: tmpl531days(),
+      days: defaultCycleDays(exercise.nameRu),
     );
     cycles.add(c);
     notifyListeners();
@@ -268,6 +266,43 @@ class AppState extends ChangeNotifier {
   }
 
   List<DiaryEntry> entriesOf(DateTime date) => log[dkey(date)] ??= [];
+
+  /// Значения для нового подхода вне цикла: тот же номер подхода на последней
+  /// тренировке этого упражнения, а при его отсутствии — предыдущий подход дня.
+  CycleSet? suggestedSet(DiaryEntry entry, int setIndex, DateTime date) {
+    if (entry.cycleId != null) return null;
+    final selectedKey = dkey(date);
+    final dates = log.keys
+        .where((key) => key.compareTo(selectedKey) < 0)
+        .toList()
+      ..sort((a, b) => b.compareTo(a));
+    DiarySet? previousSet;
+    search:
+    for (final key in dates) {
+      final entries = log[key]!;
+      for (final previous in entries.reversed) {
+        if (previous.cycleId != null ||
+            (previous.exerciseId != entry.exerciseId &&
+                previous.name != entry.name)) {
+          continue;
+        }
+        if (previous.sets.length > setIndex) {
+          previousSet = previous.sets[setIndex];
+        }
+        break search;
+      }
+    }
+    if (previousSet == null && setIndex > 0 && entry.sets.length >= setIndex) {
+      previousSet = entry.sets[setIndex - 1];
+    }
+    if (previousSet == null) return null;
+    return CycleSet(
+        w: previousSet.w,
+        reps: previousSet.reps,
+        rir: previousSet.rir,
+        durationSec: previousSet.durationSec,
+        distanceM: previousSet.distanceM);
+  }
 
   /// Мышечные группы, задействованные в записи дня (по основным мышцам).
   Set<String> entryMuscleGroups(DiaryEntry entry) {
@@ -332,7 +367,11 @@ class AppState extends ChangeNotifier {
       dayIdx: c.curDay,
       presetSets: [
         for (final s in c.days[c.curDay].sets)
-          DiarySet(w: setWeight(c, s), reps: s.reps, rir: s.rir, planned: true),
+          DiarySet(
+              w: setWeight(c, s),
+              reps: s.reps,
+              rir: cycleSetRir(c, s),
+              planned: true),
       ],
     );
     goToTab(2);
@@ -445,22 +484,59 @@ class AppState extends ChangeNotifier {
       };
 
   void loadJson(Map<String, dynamic> j) {
-    exercises.clear();
-    for (final raw in j['exercises'] as List? ?? const []) {
-      exercises.add(Exercise.fromJson(Map<String, dynamic>.from(raw as Map)));
+    const legacyNames = {
+      'Жим штанги лежа': 'Жим лёжа',
+      'Жим штанги лежа · накл': 'Жим лёжа · накл',
+      'Армейский жим': 'Жим стоя',
+      'Жим штанги сидя': 'Жим сидя',
+      'Жим штанги сидя в тренажере Смита': 'Жим сидя в тренажере Смита',
+      'Жим штанги узким хватом': 'Жим лёжа узким хватом',
+    };
+    final previous = [
+      for (final raw in j['exercises'] as List? ?? const [])
+        Exercise.fromJson(Map<String, dynamic>.from(raw as Map)),
+    ];
+    final defaults = defaultExercises();
+    final defaultById = {for (final e in defaults) e.id: e};
+    String? canonicalId(Exercise e) {
+      if (e.isCustom) return null;
+      final id = exerciseIdForName(legacyNames[e.nameRu] ?? e.nameRu);
+      return defaultById.containsKey(id) ? id : null;
     }
-    for (final exercise in defaultExercises()) {
+
+    final idRemap = <String, String>{
+      for (final e in previous)
+        if (canonicalId(e) != null) e.id: canonicalId(e)!,
+    };
+    exercises.clear();
+    final restoredDefaults = <String>{};
+    for (final old in previous) {
+      final id = canonicalId(old);
+      if (id != null) {
+        if (!restoredDefaults.add(id)) continue;
+        final exercise = defaultById[id]!;
+        exercise.archived = old.archived;
+        exercise.favorite = old.favorite;
+        if (old.nameRu == exercise.nameRu) exercise.nameEn = old.nameEn;
+        exercises.add(exercise);
+      } else if (!exercises.any((e) => e.id == old.id)) {
+        exercises.add(old);
+      }
+    }
+    for (final exercise in defaults) {
       if (!exercises.any((e) => e.id == exercise.id)) exercises.add(exercise);
     }
+
     cycles
       ..clear()
       ..addAll([
         for (final c in j['cycles'] as List? ?? const []) Cycle.fromJson(c)
       ]);
+    final rawLog = j['log'] as Map? ?? const {};
     log
       ..clear()
-      ..addAll((j['log'] as Map<String, dynamic>? ?? {}).map((k, v) =>
-          MapEntry(k, [for (final e in v as List) DiaryEntry.fromJson(e)])));
+      ..addAll(rawLog.map((k, v) => MapEntry(
+          k.toString(), [for (final e in v as List) DiaryEntry.fromJson(e)])));
     templates
       ..clear()
       ..addAll([
@@ -468,20 +544,38 @@ class AppState extends ChangeNotifier {
           WorkoutTemplate.fromJson(t)
       ]);
 
-    // Старые снапшоты не содержали каталога и формата: восстанавливаем связи.
+    // Переименования сохраняют связи старых циклов, записей и программ.
     for (final cycle in cycles) {
+      cycle.exerciseId = idRemap[cycle.exerciseId] ?? cycle.exerciseId;
       final exercise =
           exerciseById(cycle.exerciseId) ?? exerciseByName(cycle.name);
-      if (exercise != null) cycle.exerciseId = exercise.id;
+      if (exercise != null) {
+        cycle.exerciseId = exercise.id;
+        cycle.name = exercise.nameRu;
+      }
+      // Пользовательские изменения не трогаем: обновляем только целиком
+      // сохранившиеся старые варианты стандартных шаблонов.
+      if (mainCycleExercises.contains(cycle.name)) {
+        if (hasLegacyTmpl531Days(cycle)) cycle.days = tmpl531days();
+      } else if (hasLegacyWaveCycleDays(cycle)) {
+        cycle.days = waveCycleDays();
+      }
     }
     for (final entries in log.values) {
       for (final entry in entries) {
+        entry.exerciseId = idRemap[entry.exerciseId] ?? entry.exerciseId;
         final exercise =
             exerciseById(entry.exerciseId) ?? exerciseByName(entry.name);
         if (exercise != null) {
           entry.exerciseId = exercise.id;
+          entry.name = exercise.nameRu;
           if (j['schemaVersion'] == null) entry.recordFormat = exercise.format;
         }
+      }
+    }
+    for (final template in templates) {
+      for (final item in template.items) {
+        item.exerciseId = idRemap[item.exerciseId] ?? item.exerciseId;
       }
     }
     // Единый фирменный акцент; старые пользовательские цвета игнорируем.

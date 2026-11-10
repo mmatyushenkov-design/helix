@@ -9,18 +9,39 @@ import 'package:workout_tracker_frontend/storage/local_database.dart';
 void main() {
   setUpAll(sqfliteFfiInit);
 
-  test('Каталог: 173 упражнения, точный порядок групп и подходящие форматы', () {
+  test('Каталог: 179 упражнений без дубликатов и с подходящими форматами', () {
     final exercises = defaultExercises();
-    expect(exercises, hasLength(173));
-    expect(exercises.map((e) => e.nameRu).toSet(), hasLength(173));
+    expect(exercises, hasLength(179));
+    expect(exercises.map((e) => e.nameRu).toSet(), hasLength(179));
     expect(muscleCatalog.map((g) => g.code), [
       'chest', 'back', 'shoulders', 'arms', 'legs', 'core', 'cardio', 'full_body'
     ]);
-    expect(exercises.first.nameRu, 'Жим штанги лежа');
+    expect(exercises.first.nameRu, 'Жим лёжа');
     expect(exercises.last.nameRu, 'выход силой на перекладине');
     Exercise byName(String name) =>
         exercises.singleWhere((exercise) => exercise.nameRu == name);
-    expect(byName('Жим штанги лежа').format, RecordFormat.weightReps);
+    expect(byName('Жим лёжа').format, RecordFormat.weightReps);
+    expect(byName('Жим лёжа').primaryMuscles, ['mid_chest']);
+    expect(byName('Становая тяга').primaryMuscles, ['quads']);
+    expect(byName('Жим стоя').primaryMuscles, ['side_delts']);
+    expect(byName('Жим лёжа узким хватом').primaryMuscles, ['biceps']);
+    expect(byName('Подтягивания').primaryMuscles, ['lats']);
+    expect(byName('Подтягивания обратным хватом').primaryMuscles, ['biceps']);
+    expect(byName('Вис на турнике').format, RecordFormat.timeReps);
+    expect(byName('Вис на турнике').primaryMuscles, ['biceps']);
+    expect(byName('Приседания').primaryMuscles, ['quads']);
+    expect(byName('Приседания').defaultStepKg, 5);
+    expect(exercises.indexOf(byName('Приседания')),
+        greaterThan(exercises.indexOf(byName('Ягодичный мостик на одной ноге'))));
+    expect(exercises.any((e) => e.nameRu == 'Армейский жим'), isFalse);
+    expect(exercises.every((e) => e.canUseInCycle == (e.format == RecordFormat.weightReps)),
+        isTrue);
+    expect(byName('Жим гантелей лежа').defaultStepKg, 2);
+    expect(byName('Жим лёжа').defaultStepKg, 2.5);
+    expect(byName('Жим стоя').defaultStepKg, 2.5);
+    expect(byName('Становая тяга').defaultStepKg, 5);
+    expect(byName('Приседания со штангой').defaultStepKg, 5);
+    expect(byName('Ягодичный мостик').defaultStepKg, 5);
     expect(byName('Беговая дорожка').format, RecordFormat.timeDistance);
     expect(byName('Эллипсоид').format, RecordFormat.timeDistance);
     expect(byName('Планка').format, RecordFormat.timeReps);

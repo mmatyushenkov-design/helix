@@ -278,7 +278,9 @@ class _DiaryScreenState extends State<DiaryScreen> {
 
   Future<void> _addSet(DiaryEntry e) async {
     final res = await showSetSheet(context,
-        mode: SetSheetMode.newSet, format: e.recordFormat);
+        mode: SetSheetMode.newSet,
+        format: e.recordFormat,
+        initial: appState.suggestedSet(e, e.sets.length, _selected));
     if (res?.set != null) {
       final value = res!.set!;
       e.sets.add(DiarySet(
@@ -375,7 +377,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
                 DiarySet(
                     w: setWeight(c, s),
                     reps: s.reps,
-                    rir: s.rir,
+                    rir: cycleSetRir(c, s),
                     planned: true),
             ]);
         _returnToSelectedWeek();

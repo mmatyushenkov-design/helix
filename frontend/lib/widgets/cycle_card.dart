@@ -217,7 +217,10 @@ class _CycleCardState extends State<CycleCard>
                       child: SetFlow(sets: [
                         for (final s in c.days[dayIdx].sets)
                           SetBoxData(
-                              w: setWeight(c, s), reps: s.reps, rir: s.rir),
+                              w: setWeight(c, s),
+                              reps: s.reps,
+                              rir: cycleSetRir(c, s),
+                              amrap: s.amrap),
                       ]),
                     ),
                   );

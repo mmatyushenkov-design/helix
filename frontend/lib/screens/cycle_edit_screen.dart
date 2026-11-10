@@ -77,8 +77,9 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
                 style:
                     const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
             FlameLabel(
-                text:
-                    '${fmtW(appState.weightFromKg(c.bestW))}×${c.bestR} | ${fmtW(appState.weightFromKg(c.tm))} ${appState.weightLabel}'),
+                text: c.tm <= 0
+                    ? '? | ? ${appState.weightLabel}'
+                    : '${fmtW(appState.weightFromKg(c.bestW))}×${c.bestR} | ${fmtW(appState.weightFromKg(c.tm))} ${appState.weightLabel}'),
           ],
         ),
       ),
@@ -92,17 +93,21 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
               help:
                   'Расчётный максимум — максимальный вес в этом упражнении на одно повторение, использующийся для расчёта подходов цикла (чем меньше повторений в подходе, используемом для расчёта — тем точнее вычисление).',
               onTap: _editTm,
-              child: Text.rich(
-                TextSpan(children: [
-                  TextSpan(text: fmtW(appState.weightFromKg(c.tm))),
-                  TextSpan(
-                      text: ' ${appState.weightLabel}',
+              child: c.tm <= 0
+                  ? const Text('?',
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.w700))
+                  : Text.rich(
+                      TextSpan(children: [
+                        TextSpan(text: fmtW(appState.weightFromKg(c.tm))),
+                        TextSpan(
+                            text: ' ${appState.weightLabel}',
+                            style: const TextStyle(
+                                fontSize: 12, color: AppColors.textDim)),
+                      ]),
                       style: const TextStyle(
-                          fontSize: 12, color: AppColors.textDim)),
-                ]),
-                style:
-                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-              ),
+                          fontSize: 15, fontWeight: FontWeight.w700),
+                    ),
             ),
             const SizedBox(height: 12),
             _parameter(
@@ -283,8 +288,12 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
                 SetBoxData(
                   w: setWeight(c, s),
                   reps: s.reps,
-                  rir: s.rir,
-                  pct: s.pct ?? (s.w! / c.tm * 100).round(),
+                  rir: cycleSetRir(c, s),
+                  amrap: s.amrap,
+                  pct: s.pct ??
+                      (c.tm > 0
+                          ? ((s.w ?? 0) / c.tm * 100).roundToDouble()
+                          : 0),
                   pctApprox: s.pct == null,
                 ),
             ],

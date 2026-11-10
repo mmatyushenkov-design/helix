@@ -41,7 +41,7 @@ Future<SetSheetResult?> showSetSheet(
   );
 }
 
-enum _Field { weight, reps, pct, duration, distance }
+enum _Field { weight, reps, pct, minutes, seconds, distance }
 
 class _SetSheet extends StatefulWidget {
   final SetSheetMode mode;
@@ -59,13 +59,17 @@ class _SetSheetState extends State<_SetSheet> {
   late String _wBuf;
   late String _rBuf;
   late String _pctBuf;
-  late String _timeBuf;
+  late String _minBuf;
+  late String _secBuf;
   late String _distBuf;
   _Field? _target;
+  final Set<_Field> _freshFields = {};
   bool _approxW = false;
   bool _approxP = false;
   _Field _lastEdited = _Field.pct;
   int _rirIdx = 2;
+  int? _rirReps;
+  bool _amrap = false;
 
   bool get _isCycle =>
       widget.mode == SetSheetMode.editCycle ||
@@ -85,25 +89,31 @@ class _SetSheetState extends State<_SetSheet> {
     super.initState();
     final c = widget.cycle;
     final s = widget.initial;
+    final seconds = s?.durationSec ?? 60;
+    _minBuf = '${seconds ~/ 60}';
+    _secBuf = '${seconds % 60}';
     if (_isTm && c != null) {
-      _wBuf = fmtW(appState.weightFromKg(c.bestW));
-      _rBuf = '${c.bestR}';
+      final empty = c.tm <= 0;
+      _wBuf = empty ? '0' : fmtW(appState.weightFromKg(c.bestW));
+      _rBuf = empty ? '0' : '${c.bestR}';
       _pctBuf = '75';
-      _timeBuf = '60';
       _distBuf = '5';
       _target = _Field.weight;
+      _freshFields.add(_Field.weight);
     } else if (s != null && _isCycle && c != null) {
       _wBuf = fmtW(appState.weightFromKg(setWeight(c, s)));
       _rBuf = '${s.reps}';
-      _timeBuf = '${s.durationSec}';
       _distBuf = fmtW(appState.distanceFromMeters(s.distanceM));
-      _rirIdx = s.rir.clamp(0, 6);
+      _rirReps = s.rirReps;
+      _amrap = s.amrap;
+      _rirIdx = cycleSetRir(c, s).clamp(0, 6);
       if (s.pct != null) {
-        _pctBuf = '${s.pct}';
+        _pctBuf = fmtW(s.pct!);
         final exact = c.tm * s.pct! / 100 + c.wOffset;
         _approxW = (setWeight(c, s) - exact).abs() > 0.001;
       } else {
-        _pctBuf = '${((s.w! - c.wOffset) / c.tm * 100).round()}';
+        _pctBuf =
+            c.tm > 0 ? '${((s.w! - c.wOffset) / c.tm * 100).round()}' : '0';
         _approxP = true;
         _lastEdited = _Field.weight;
       }
@@ -111,14 +121,12 @@ class _SetSheetState extends State<_SetSheet> {
       _wBuf = fmtW(appState.weightFromKg(s.w ?? 0));
       _rBuf = '${s.reps}';
       _pctBuf = '75';
-      _timeBuf = '${s.durationSec}';
       _distBuf = fmtW(appState.distanceFromMeters(s.distanceM));
       _rirIdx = s.rir.clamp(0, 6);
     } else {
       _wBuf = '120';
       _rBuf = '4';
       _pctBuf = '75';
-      _timeBuf = '60';
       _distBuf = '5';
     }
   }
@@ -129,7 +137,8 @@ class _SetSheetState extends State<_SetSheet> {
         _Field.weight => _wBuf,
         _Field.reps => _rBuf,
         _Field.pct => _pctBuf,
-        _Field.duration => _timeBuf,
+        _Field.minutes => _minBuf,
+        _Field.seconds => _secBuf,
         _Field.distance => _distBuf,
       };
 
@@ -141,8 +150,10 @@ class _SetSheetState extends State<_SetSheet> {
         _rBuf = value;
       case _Field.pct:
         _pctBuf = value;
-      case _Field.duration:
-        _timeBuf = value;
+      case _Field.minutes:
+        _minBuf = value;
+      case _Field.seconds:
+        _secBuf = value;
       case _Field.distance:
         _distBuf = value;
     }
@@ -152,13 +163,17 @@ class _SetSheetState extends State<_SetSheet> {
     final t = _target;
     if (t == null) return;
     var buf = _buf(t);
+    final fresh = _freshFields.remove(t);
     if (k == '⌫') {
-      buf = buf.isEmpty ? '' : buf.substring(0, buf.length - 1);
+      buf = fresh || buf.isEmpty ? '' : buf.substring(0, buf.length - 1);
     } else if (k == ',') {
-      if ((t == _Field.weight || t == _Field.distance) && !buf.contains(',')) {
-        buf = '${buf.isEmpty ? '0' : buf},';
+      if (t == _Field.weight || t == _Field.distance || t == _Field.pct) {
+        buf = fresh || buf.isEmpty ? '0,' : (buf.contains(',') ? buf : '$buf,');
       }
-    } else if (buf.replaceAll(RegExp(r'[,.]'), '').length < 7) {
+    } else if (fresh) {
+      buf = k;
+    } else if (buf.replaceAll(RegExp(r'[,.]'), '').length <
+        (t == _Field.seconds ? 2 : 7)) {
       buf = (buf == '0' ? '' : buf) + k;
     }
     setState(() {
@@ -168,19 +183,34 @@ class _SetSheetState extends State<_SetSheet> {
         if (t == _Field.pct) {
           _lastEdited = _Field.pct;
           final exact = _num(buf) * c.tm / 100 + c.wOffset;
-          final rounded =
-              ((exact / c.step).round() * c.step * 100).roundToDouble() / 100;
+          final rounded = c.step <= 0
+              ? 0.0
+              : ((exact / c.step).round() * c.step * 100).roundToDouble() / 100;
           _approxW = (rounded - exact).abs() > 0.001;
           _approxP = false;
           _wBuf = fmtW(appState.weightFromKg(rounded));
         } else if (t == _Field.weight) {
           _lastEdited = _Field.weight;
-          final exactPct =
-              (appState.weightToKg(_num(buf)) - c.wOffset) / c.tm * 100;
-          final roundedPct = exactPct.round();
-          _approxP = (roundedPct - exactPct).abs() > 0.001;
+          if (c.tm > 0) {
+            final exactPct =
+                (appState.weightToKg(_num(buf)) - c.wOffset) / c.tm * 100;
+            final roundedPct = exactPct.round();
+            _approxP = (roundedPct - exactPct).abs() > 0.001;
+            _pctBuf = '$roundedPct';
+          } else {
+            _pctBuf = '0';
+            _approxP = false;
+          }
           _approxW = false;
-          _pctBuf = '$roundedPct';
+        }
+        if (t == _Field.reps) _rirReps = null;
+        if (t == _Field.pct || t == _Field.weight || t == _Field.reps) {
+          _rirIdx = calculateRir(
+            trainingMax: c.tm,
+            weight: appState.weightToKg(_num(_wBuf)),
+            reps: _rirReps ?? int.tryParse(_rBuf) ?? 0,
+            fallback: _rirIdx,
+          );
         }
       }
     });
@@ -207,14 +237,20 @@ class _SetSheetState extends State<_SetSheet> {
     }
     final format = _format;
     final weight = format.usesWeight ? appState.weightToKg(_num(_wBuf)) : null;
+    final reps =
+        format.usesReps ? (r == 0 ? (widget.initial?.reps ?? 5) : r) : 0;
     final result = CycleSet(
       w: _isCycle && _lastEdited != _Field.weight ? null : weight,
       pct: _isCycle && _lastEdited != _Field.weight
-          ? int.tryParse(_pctBuf) ?? 75
+          ? double.tryParse(_pctBuf.replaceAll(',', '.')) ?? 75
           : null,
-      reps: format.usesReps ? (r == 0 ? (widget.initial?.reps ?? 5) : r) : 0,
+      reps: reps,
       rir: _rirIdx,
-      durationSec: format.usesTime ? int.tryParse(_timeBuf) ?? 0 : 0,
+      amrap: _isCycle && _amrap,
+      rirReps: _isCycle ? _rirReps : null,
+      durationSec: format.usesTime
+          ? (int.tryParse(_minBuf) ?? 0) * 60 + (int.tryParse(_secBuf) ?? 0)
+          : 0,
       distanceM:
           format.usesDistance ? appState.distanceToMeters(_num(_distBuf)) : 0,
     );
@@ -226,7 +262,10 @@ class _SetSheetState extends State<_SetSheet> {
     final approx =
         f == _Field.weight ? _approxW : (f == _Field.pct ? _approxP : false);
     return GestureDetector(
-      onTap: () => setState(() => _target = f),
+      onTap: () => setState(() {
+        _target = f;
+        _freshFields.add(f);
+      }),
       child: Container(
         height: 58,
         alignment: Alignment.center,
@@ -304,10 +343,14 @@ class _SetSheetState extends State<_SetSheet> {
                     _separator('×'),
                   ],
                   if (format.usesTime) ...[
-                    Expanded(child: _field(_Field.duration, ' с')),
-                    if (format.usesReps) _separator('×'),
+                    Expanded(child: _field(_Field.minutes, ' мин')),
+                    _separator(':'),
+                    Expanded(child: _field(_Field.seconds, ' сек')),
                   ],
-                  if (format.usesReps) Expanded(child: _field(_Field.reps, '')),
+                  if (format.usesReps) ...[
+                    if (format.usesTime) _separator('×'),
+                    Expanded(child: _field(_Field.reps, '')),
+                  ],
                   if (format.usesDistance) ...[
                     _separator('·'),
                     Expanded(

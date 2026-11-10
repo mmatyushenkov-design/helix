@@ -29,23 +29,58 @@ class _ExercisePicker extends StatefulWidget {
 class _ExercisePickerState extends State<_ExercisePicker> {
   String _filter = '';
   String? _group;
+  late bool _showAll = appState.cycles.isNotEmpty;
+
+  static const mainPriorityNames = [
+    'Жим лёжа',
+    'Становая тяга',
+    'Приседания со штангой',
+    'Жим стоя',
+  ];
+
+  static const priorityNames = [
+    ...mainPriorityNames,
+    'Тяга верхнего блока',
+    'Тяга блока к поясу сидя',
+    'Подтягивания',
+    'Сгибание рук со штангой',
+    'Разгибание рук на блоке',
+    'Шраги в тренажере Смита',
+  ];
 
   @override
   Widget build(BuildContext context) {
     final language = appState.language;
+    final searching = _filter.isNotEmpty || _group != null;
     final items = appState.exercises.where((e) {
-      if (e.archived || e.format != RecordFormat.weightReps) return false;
+      // Формат отсекаем до поиска: время и дистанция недоступны для циклов.
+      if (e.archived || !e.canUseInCycle) return false;
       if (!e.name(language).toLowerCase().contains(_filter.toLowerCase()) &&
           !e.nameRu.toLowerCase().contains(_filter.toLowerCase())) {
         return false;
       }
-      if (_group == null) return true;
-      final codes = muscleCatalog
-          .firstWhere((g) => g.code == _group)
-          .muscles
-          .map((m) => m.code);
-      return [...e.primaryMuscles, ...e.secondaryMuscles].any(codes.contains);
-    }).toList();
+      if (_group != null) {
+        final codes = muscleCatalog
+            .firstWhere((g) => g.code == _group)
+            .muscles
+            .map((m) => m.code);
+        return [...e.primaryMuscles, ...e.secondaryMuscles].any(codes.contains);
+      }
+      if (!searching && !_showAll && !mainPriorityNames.contains(e.nameRu)) {
+        return false;
+      }
+      return true;
+    }).toList()
+      ..sort((a, b) {
+        final ai = priorityNames.indexOf(a.nameRu);
+        final bi = priorityNames.indexOf(b.nameRu);
+        if (ai >= 0 || bi >= 0) {
+          if (ai < 0) return 1;
+          if (bi < 0) return -1;
+          return ai.compareTo(bi);
+        }
+        return 0;
+      });
     return Padding(
       padding:
           EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
@@ -83,19 +118,41 @@ class _ExercisePickerState extends State<_ExercisePicker> {
               const SizedBox(height: 10),
               Expanded(
                 child: ListView.builder(
-                  itemCount: items.length,
+                  itemCount: items.length + (!_showAll && !searching ? 1 : 0),
                   itemBuilder: (context, i) {
+                    if (i == items.length) {
+                      return TextButton.icon(
+                        onPressed: () => setState(() => _showAll = true),
+                        icon: const Icon(Icons.keyboard_arrow_down, size: 18),
+                        label: const Text('Все упражнения'),
+                      );
+                    }
                     final exercise = items[i];
+                    final hasCycle =
+                        appState.cycles.any((c) => c.exerciseId == exercise.id);
                     return InkWell(
-                      onTap: () => Navigator.pop(context, exercise.id),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 14, horizontal: 6),
-                        decoration: const BoxDecoration(
-                            border: Border(
-                                bottom: BorderSide(color: AppColors.border))),
-                        child: Text(exercise.name(language),
-                            style: const TextStyle(fontSize: 15)),
+                      onTap: hasCycle
+                          ? null
+                          : () => Navigator.pop(context, exercise.id),
+                      child: Opacity(
+                        opacity: hasCycle ? 0.38 : 1,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 14, horizontal: 6),
+                          decoration: const BoxDecoration(
+                              border: Border(
+                                  bottom: BorderSide(color: AppColors.border))),
+                          child: Row(children: [
+                            Expanded(
+                              child: Text(exercise.name(language),
+                                  style: const TextStyle(fontSize: 15)),
+                            ),
+                            if (hasCycle)
+                              const Text('Уже в цикле',
+                                  style: TextStyle(
+                                      fontSize: 12, color: AppColors.textDim)),
+                          ]),
+                        ),
                       ),
                     );
                   },
@@ -150,6 +207,26 @@ class CyclesScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 14),
+            if (appState.cycles.isEmpty)
+              const Padding(
+                padding: EdgeInsets.only(top: 42, left: 22, right: 22),
+                child: Text(
+                  'ВНИМАНИЕ!\n\n'
+                  'Для правильного подбора нагрузки и избежания травм '
+                  'необходимо выполнять упражнение в хорошей технике\n\n'
+                  'Составление программы тренировок с использованием '
+                  'тренировочных циклов (периодизации) помогает стабильнее '
+                  'прогрессировать в рабочих весах за счёт чередования '
+                  'тяжёлых и лёгких тренировочных дней, использования разных '
+                  'диапазонов повторений и регулирования нагрузки.\n\n'
+                  'Рекомендуется делать каждое упражнение в цикле два раза в неделю:\n'
+                  'одна тренировка в рамках цикла,\n'
+                  'вторая - вне цикла, поддерживающая, с маленькими весами.\n'
+                  'по умолчанию цикл рассчитан именно на такой режим тренировок.',
+                  style: TextStyle(
+                      fontSize: 15, height: 1.45, color: Color(0xFF858585)),
+                ),
+              ),
             for (final c in appState.cycles)
               CycleCard(cycle: c, accent: accent),
           ],

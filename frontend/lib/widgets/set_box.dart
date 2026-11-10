@@ -23,9 +23,10 @@ class SetBoxData {
   final int durationSec;
   final double distanceM;
   final RecordFormat format;
-  final int? pct;
+  final double? pct;
   final bool pctApprox;
   final bool planned;
+  final bool amrap;
 
   const SetBoxData({
     this.w = 0,
@@ -37,6 +38,7 @@ class SetBoxData {
     this.pct,
     this.pctApprox = false,
     this.planned = false,
+    this.amrap = false,
   });
 }
 
@@ -102,8 +104,7 @@ class SetBox extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(6, 8, 6, 6),
       decoration: BoxDecoration(
         color: AppColors.surface2,
-        border:
-            data.planned ? null : Border.all(color: AppColors.border),
+        border: data.planned ? null : Border.all(color: AppColors.border),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -136,13 +137,12 @@ class SetBox extends StatelessWidget {
           if (data.pct != null)
             Padding(
               padding: const EdgeInsets.only(top: 1),
-              child: Text('${data.pctApprox ? '~' : ''}${data.pct}%',
+              child: Text('${data.pctApprox ? '~' : ''}${fmtW(data.pct!)}%',
                   style:
                       const TextStyle(fontSize: 11, color: AppColors.textDim)),
             ),
           const SizedBox(height: 4),
-          if (data.format.usesRir)
-            RirPill(code: data.rir, gray: data.planned),
+          if (data.format.usesRir) RirPill(code: data.rir, gray: data.planned),
         ],
       ),
     );
@@ -192,8 +192,7 @@ class RirPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg =
-        (gray || code == -1) ? pillWarm : pillColors[code.clamp(0, 6)];
+    final bg = (gray || code == -1) ? pillWarm : pillColors[code.clamp(0, 6)];
     return Container(
       height: 20,
       constraints: const BoxConstraints(minWidth: 40),
