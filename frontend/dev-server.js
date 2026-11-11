@@ -42,4 +42,4 @@ http.createServer((req, res) => {
     'Cache-Control': 'no-cache',
   });
   fs.createReadStream(file).pipe(res);
-}).listen(port, host, () => console.log(`Workout Tracker: http://${host}:${port}`));
+}).listen(port, host, () => console.log(`Helix: http://${host}:${port}`));

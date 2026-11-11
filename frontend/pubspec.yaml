@@ -1,5 +1,5 @@
 name: workout_tracker_frontend
-description: "Powerlifting workout tracker mobile app."
+description: "Helix - local strength training tracker with 5/3/1 periodization."
 publish_to: 'none'
 version: 1.1.0+6
 

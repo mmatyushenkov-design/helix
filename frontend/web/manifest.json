@@ -1,6 +1,6 @@
 {
-    "name": "workout_tracker_frontend",
-    "short_name": "workout_tracker_frontend",
+    "name": "Helix",
+    "short_name": "Helix",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

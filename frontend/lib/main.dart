@@ -27,7 +27,7 @@ class WorkoutTrackerApp extends StatelessWidget {
     return ListenableBuilder(
       listenable: appState,
       builder: (context, _) => MaterialApp(
-        title: 'Workout Tracker',
+        title: 'Helix',
         debugShowCheckedModeBanner: false,
         locale: Locale(appState.language),
         supportedLocales: const [Locale('ru'), Locale('en')],

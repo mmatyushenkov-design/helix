@@ -190,3 +190,7 @@ mockup/screens/
 # The Python template ignores every lib/ directory; keep the Flutter sources.
 !frontend/lib/
 !frontend/lib/**
+
+# Local working materials
+imports/
+previews/
