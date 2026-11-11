@@ -50,6 +50,7 @@ void main() {
     await tester.tap(find.text('Настройки'));
     await tester.pumpAndSettle();
     expect(find.text('Управление упражнениями'), findsNothing);
+    expect(find.text('release-1.1.0'), findsOneWidget);
 
     await tester.tap(find.byType(DropdownButton<String>));
     await tester.pumpAndSettle();

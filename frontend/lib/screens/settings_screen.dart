@@ -168,7 +168,7 @@ class SettingsScreen extends StatelessWidget {
             ),
           ]),
           _group(tr('about'),
-              [_row(tr('version'), trailing: const _Val('release-1.0.0'))]),
+              [_row(tr('version'), trailing: const _Val('release-1.1.0'))]),
         ],
       ),
     );
