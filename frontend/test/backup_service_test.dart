@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 import 'package:workout_tracker_frontend/models/models.dart';
 import 'package:workout_tracker_frontend/state/app_state.dart';
 import 'package:workout_tracker_frontend/storage/backup_service_io.dart';
@@ -31,5 +32,23 @@ void main() {
     expect(restored['cycles'], hasLength(state.cycles.length));
     expect(utf8.decode(await storage.readBytes('media/exercise/demo.txt')),
         'local-media');
+  });
+
+  test('Экспорт для отправки использует имя файла, совместимое с Windows',
+      () async {
+    final directory =
+        await Directory.systemTemp.createTemp('workout-tracker-export-');
+    addTearDown(() => directory.delete(recursive: true));
+    final storage = LocalFileStorage(rootDirectory: directory);
+    final service = LocalBackupService(storage: storage);
+
+    final state = AppState()..seed();
+    final path = await service.createExportZip(state.toJson());
+
+    expect(
+      p.basename(path).toLowerCase(),
+      matches(r'^workout-save-\d{4}\.\d{2}\.\d{2}-\d{2}-\d{2}-\d{2}\.zip$'),
+    );
+    expect(p.basename(path), isNot(contains(':')));
   });
 }

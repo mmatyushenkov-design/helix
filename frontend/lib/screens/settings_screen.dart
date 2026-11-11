@@ -1,5 +1,6 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../models/models.dart';
@@ -167,8 +168,17 @@ class SettingsScreen extends StatelessWidget {
                   () => LocalBackupService().exportCsv(appState.toJson())),
             ),
           ]),
-          _group(tr('about'),
-              [_row(tr('version'), trailing: const _Val('release-1.1.0'))]),
+          _group(tr('about'), [
+            _row(
+              tr('version'),
+              trailing: FutureBuilder<PackageInfo>(
+                future: PackageInfo.fromPlatform(),
+                builder: (context, snapshot) => _Val(snapshot.hasData
+                    ? 'release-${snapshot.data!.version}'
+                    : '…'),
+              ),
+            ),
+          ]),
         ],
       ),
     );

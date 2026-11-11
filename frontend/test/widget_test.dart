@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:workout_tracker_frontend/main.dart';
 import 'package:workout_tracker_frontend/models/models.dart';
 import 'package:workout_tracker_frontend/screens/diary_screen.dart';
@@ -10,6 +11,13 @@ import 'package:workout_tracker_frontend/widgets/set_sheet.dart';
 
 void main() {
   setUp(() {
+    PackageInfo.setMockInitialValues(
+      appName: 'workout_tracker_frontend',
+      packageName: 'com.example.workout_tracker_frontend',
+      version: '1.1.0',
+      buildNumber: '6',
+      buildSignature: '',
+    );
     appState
       ..seed()
       ..language = 'ru'
